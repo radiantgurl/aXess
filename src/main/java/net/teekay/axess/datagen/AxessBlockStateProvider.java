@@ -26,6 +26,8 @@ public class AxessBlockStateProvider extends BlockStateProvider {
     protected void registerStatesAndModels() {
         // KEYCARD READERS
         keycardReader(AxessBlockRegistry.KEYCARD_READER.get(), "keycard_reader");
+        keycardReader(AxessBlockRegistry.MINI_KEYCARD_READER_LEFT.get(), "mini_keycard_reader_left");
+        keycardReader(AxessBlockRegistry.MINI_KEYCARD_READER_RIGHT.get(), "mini_keycard_reader_right");
 
         // NETWORK MANAGER
         String networkManagerID = "network_manager";

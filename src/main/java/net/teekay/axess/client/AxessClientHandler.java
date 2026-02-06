@@ -38,6 +38,9 @@ public class AxessClientHandler {
     @SubscribeEvent
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerBlockEntityRenderer(AxessBlockEntityRegistry.KEYCARD_READER.get(), KeycardReaderBlockEntityRenderer::new);
+        event.registerBlockEntityRenderer(AxessBlockEntityRegistry.MINI_KEYCARD_READER_LEFT.get(), KeycardReaderBlockEntityRenderer::new);
+        event.registerBlockEntityRenderer(AxessBlockEntityRegistry.MINI_KEYCARD_READER_RIGHT.get(), KeycardReaderBlockEntityRenderer::new);
+
         event.registerBlockEntityRenderer(AxessBlockEntityRegistry.KEYCARD_EDITOR.get(), KeycardEditorBlockEntityRenderer::new);
         event.registerBlockEntityRenderer(AxessBlockEntityRegistry.RECEIVER.get(), ReceiverBlockEntityRenderer::new);
     }

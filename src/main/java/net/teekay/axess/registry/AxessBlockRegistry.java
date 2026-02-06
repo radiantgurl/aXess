@@ -11,6 +11,8 @@ import net.teekay.axess.Axess;
 import net.teekay.axess.block.keycardeditor.KeycardEditorBlock;
 import net.teekay.axess.block.networkmanager.NetworkManagerBlock;
 import net.teekay.axess.block.readers.KeycardReaderBlock;
+import net.teekay.axess.block.readers.MiniKeycardReaderLeftBlock;
+import net.teekay.axess.block.readers.MiniKeycardReaderRightBlock;
 import net.teekay.axess.block.receiver.ReceiverBlock;
 
 import java.util.*;
@@ -25,6 +27,9 @@ public class AxessBlockRegistry {
 
     // REGISTRY
     public static final RegistryObject<Block> KEYCARD_READER = registerBlock("keycard_reader", KeycardReaderBlock::new);
+    public static final RegistryObject<Block> MINI_KEYCARD_READER_LEFT = registerBlock("mini_keycard_reader_left", MiniKeycardReaderLeftBlock::new);
+    public static final RegistryObject<Block> MINI_KEYCARD_READER_RIGHT = registerBlock("mini_keycard_reader_right", MiniKeycardReaderRightBlock::new);
+
     public static final RegistryObject<Block> NETWORK_MANAGER = registerBlock("network_manager", NetworkManagerBlock::new);
     public static final RegistryObject<Block> KEYCARD_EDITOR = registerBlock("keycard_editor", KeycardEditorBlock::new);
     public static final RegistryObject<Block> RECEIVER = registerBlock("receiver", ReceiverBlock::new);

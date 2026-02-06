@@ -1,6 +1,5 @@
 package net.teekay.axess.screen;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.*;
 import net.minecraft.client.gui.screens.Screen;
@@ -78,10 +77,11 @@ public class NetworkManagerScreen extends Screen {
 
         this.addButton = addRenderableWidget(addButton);
 
-        this.networkList = new NetworkList(leftPos + 14, topPos + 51, 169, 116);
+        this.networkList = new NetworkList(leftPos + 14, topPos + 51, 169, 116,
+                (AxessClientMenus::openNetworkEditorScreen));
 
         for (AccessNetwork network : AccessNetworkDataClient.getNetworks()) {
-            NetworkEntry btn = this.networkList.addElement(network);
+            NetworkEntry btn = this.networkList.addElement(network, true);
             addWidget(btn.button);
             addWidget(btn.trashButton);
         }
@@ -98,11 +98,11 @@ public class NetworkManagerScreen extends Screen {
         super.render(pGuiGraphics, pMouseX, pMouseY, pPartialTick);
 
         int networksCount = AccessNetworkDataClient.getNetworks().stream().filter((network -> network.isOwnedBy(getMinecraft().player))).toList().size();
-        int maxNetworksCount = AxessConfig.maxNetworksPerPlayer;
+        int maxNetworksCount = getMinecraft().player != null ? AxessConfig.getPlayerMaxNetworks(getMinecraft().player) : 0;
 
         this.addButton.active = networksCount < maxNetworksCount;
 
-        pGuiGraphics.drawString(this.font, Component.literal(String.valueOf(networksCount)).append("/").append(String.valueOf(AxessConfig.maxNetworksPerPlayer)).append(" ").append(NETWORKS_LABEL),
+        pGuiGraphics.drawString(this.font, Component.literal(String.valueOf(networksCount)).append("/").append(String.valueOf(maxNetworksCount)).append(" ").append(NETWORKS_LABEL),
                 this.leftPos+13, this.topPos+32, AxessColors.MAIN.getRGB(), false);
         pGuiGraphics.drawString(this.font, TITLE_LABEL, this.leftPos+8, this.topPos+8, AxessColors.MAIN.getRGB(), false);
     }

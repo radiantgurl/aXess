@@ -3,7 +3,6 @@ package net.teekay.axess.screen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.*;
-import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.network.chat.Component;
@@ -45,7 +44,7 @@ public class NetworkEditorScreen extends Screen {
 
     // UI Elements
     private HumbleImageButton addButton;
-    private AccessLevelList accessLevelList;
+    private AccessLevelListEditor accessLevelListEditor;
     private HumbleImageButton doneButton;
     private HumbleImageButton cancelButton;
     private EditBox nameEdit;
@@ -125,12 +124,12 @@ public class NetworkEditorScreen extends Screen {
         this.cancelButton.setTooltip(Tooltip.create(CANCEL_BUTTON_LABEL));
 
         int pastPos = 0;
-        if (this.accessLevelList != null) {
-            pastPos = this.accessLevelList.scrollPos;
+        if (this.accessLevelListEditor != null) {
+            pastPos = this.accessLevelListEditor.scrollPos;
         }
 
-        this.accessLevelList = new AccessLevelList(this);
-        this.accessLevelList.scrollPos = pastPos;
+        this.accessLevelListEditor = new AccessLevelListEditor(this);
+        this.accessLevelListEditor.scrollPos = pastPos;
 
         HumbleImageButton addButton = new HumbleImageButton(
                 this.leftPos + 218,
@@ -144,7 +143,7 @@ public class NetworkEditorScreen extends Screen {
                     AccessLevel newAl = new AccessLevel(this.network.getUUID());
                     newAl.setPriority(999999);
                     this.network.addAccessLevel(newAl);
-                    this.accessLevelList.addElement(newAl);
+                    this.accessLevelListEditor.addElement(newAl);
                 }
         );
 
@@ -153,7 +152,7 @@ public class NetworkEditorScreen extends Screen {
         this.addButton = addRenderableWidget(addButton);
 
         for (AccessLevel accessLevel : this.network.getAccessLevels()) {
-            this.accessLevelList.addElement(accessLevel);
+            this.accessLevelListEditor.addElement(accessLevel);
         }
     }
 
@@ -163,7 +162,7 @@ public class NetworkEditorScreen extends Screen {
 
         pGuiGraphics.blit(TEXTURE, this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight);
 
-        this.accessLevelList.render(pGuiGraphics, pMouseX, pMouseY, pPartialTick);
+        this.accessLevelListEditor.render(pGuiGraphics, pMouseX, pMouseY, pPartialTick);
 
         super.render(pGuiGraphics, pMouseX, pMouseY, pPartialTick);
 
@@ -172,8 +171,8 @@ public class NetworkEditorScreen extends Screen {
         //        this.leftPos+13, this.topPos+32, AxessColors.MAIN, false);
         pGuiGraphics.drawString(this.font, TITLE_LABEL, this.leftPos+8, this.topPos+8, AxessColors.MAIN.getRGB(), false);
 
-        int accessLevelCount = this.accessLevelList.getSize();
-        int accessLevelMaxCount = AxessConfig.maxLevelsPerNetwork;
+        int accessLevelCount = this.accessLevelListEditor.getSize();
+        int accessLevelMaxCount = getMinecraft().player != null ? AxessConfig.getPlayerMaxLevelsPerNetwork(getMinecraft().player) : 0;
 
         this.addButton.active = accessLevelCount < accessLevelMaxCount;
 
@@ -190,13 +189,13 @@ public class NetworkEditorScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double pMouseX, double pMouseY, double pDelta) {
-        this.accessLevelList.scroll((int) (pDelta) * -7);
+        this.accessLevelListEditor.scroll((int) (pDelta) * -7);
         return super.mouseScrolled(pMouseX, pMouseY, pDelta);
     }
 
     @Override
     public boolean mouseReleased(double pMouseX, double pMouseY, int pButton) {
-        this.accessLevelList.mouseReleased(pMouseX, pMouseY, pButton);
+        this.accessLevelListEditor.mouseReleased(pMouseX, pMouseY, pButton);
         return super.mouseReleased(pMouseX, pMouseY, pButton);
     }
 }

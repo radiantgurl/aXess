@@ -1,5 +1,6 @@
 package net.teekay.axess.block.readers;
 
+import com.ibm.icu.impl.Pair;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -45,16 +46,18 @@ public abstract class AbstractKeycardReaderBlock extends FaceAttachedHorizontalD
     public final VoxelShape VOXEL_SHAPE_1 = Block.box(3, 1, 15, 13, 15, 16);
     public final VoxelShape VOXEL_SHAPE_2 = Block.box(3, 5, 14, 13, 13, 15);
 
-    public final VoxelShape VOXEL_SHAPE = Shapes.join(VOXEL_SHAPE_1, VOXEL_SHAPE_2, BooleanOp.OR);
+    public VoxelShape getVoxelShape() {
+        return Shapes.join(VOXEL_SHAPE_1, VOXEL_SHAPE_2, BooleanOp.OR);
+    }
 
-    public final VoxelShape VOXEL_SHAPE_SOUTH = VoxelShapeUtilities.rotateShape(VOXEL_SHAPE, Direction.NORTH, Direction.SOUTH);
-    public final VoxelShape VOXEL_SHAPE_WEST = VoxelShapeUtilities.rotateShape(VOXEL_SHAPE, Direction.NORTH, Direction.WEST);
-    public final VoxelShape VOXEL_SHAPE_EAST = VoxelShapeUtilities.rotateShape(VOXEL_SHAPE, Direction.NORTH, Direction.EAST);
+    public final VoxelShape VOXEL_SHAPE_SOUTH = VoxelShapeUtilities.rotateShape(getVoxelShape(), Direction.NORTH, Direction.SOUTH);
+    public final VoxelShape VOXEL_SHAPE_WEST = VoxelShapeUtilities.rotateShape(getVoxelShape(), Direction.NORTH, Direction.WEST);
+    public final VoxelShape VOXEL_SHAPE_EAST = VoxelShapeUtilities.rotateShape(getVoxelShape(), Direction.NORTH, Direction.EAST);
 
-    public final VoxelShape VOXEL_SHAPE_FLOOR_X = VoxelShapeUtilities.rotateShape(VOXEL_SHAPE, Direction.NORTH, Direction.UP);
+    public final VoxelShape VOXEL_SHAPE_FLOOR_X = VoxelShapeUtilities.rotateShape(getVoxelShape(), Direction.NORTH, Direction.UP);
     public final VoxelShape VOXEL_SHAPE_FLOOR_Z = VoxelShapeUtilities.rotateShape(VOXEL_SHAPE_FLOOR_X, Direction.NORTH, Direction.WEST);
 
-    public final VoxelShape VOXEL_SHAPE_CEILING_X = VoxelShapeUtilities.rotateShape(VOXEL_SHAPE, Direction.NORTH, Direction.DOWN);
+    public final VoxelShape VOXEL_SHAPE_CEILING_X = VoxelShapeUtilities.rotateShape(getVoxelShape(), Direction.NORTH, Direction.DOWN);
     public final VoxelShape VOXEL_SHAPE_CEILING_Z = VoxelShapeUtilities.rotateShape(VOXEL_SHAPE_CEILING_X, Direction.NORTH, Direction.WEST);
 
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
@@ -80,26 +83,30 @@ public abstract class AbstractKeycardReaderBlock extends FaceAttachedHorizontalD
                 case SOUTH -> VOXEL_SHAPE_SOUTH;
                 case WEST -> VOXEL_SHAPE_WEST;
                 case EAST -> VOXEL_SHAPE_EAST;
-                default -> VOXEL_SHAPE;
+                default -> getVoxelShape();
             };
             case CEILING -> switch (facing) {
                 case SOUTH, NORTH -> VOXEL_SHAPE_CEILING_X;
                 case WEST, EAST -> VOXEL_SHAPE_CEILING_Z;
-                default -> VOXEL_SHAPE;
+                default -> getVoxelShape();
             };
             case FLOOR -> switch (facing) {
                 case SOUTH, NORTH -> VOXEL_SHAPE_FLOOR_X;
                 case WEST, EAST -> VOXEL_SHAPE_FLOOR_Z;
-                default -> VOXEL_SHAPE;
+                default -> getVoxelShape();
             };
-            default -> VOXEL_SHAPE;
+            default -> getVoxelShape();
         };
     }
 
-    public InteractionResult deny() {
-
-
-        return InteractionResult.SUCCESS;
+    public InteractionResult tryOverride(KeycardReaderBlockEntity reader, Level pLevel, BlockState pState, BlockPos pPos, AccessNetwork keycardNet, AccessLevel keycardLevel, InteractionResult failResult) {
+        for (Pair<AccessNetwork, AccessLevel> pair :
+            reader.getOverrideAccessLevels()) {
+            if (pair.first.getUUID() == keycardNet.getUUID() && pair.second.getUUID() == keycardLevel.getUUID()) {
+                return onSuccess(reader, pLevel, pState, pPos);
+            }
+        }
+        return onFail(reader, pLevel, pState, pPos);
     }
 
     @Override
@@ -116,22 +123,21 @@ public abstract class AbstractKeycardReaderBlock extends FaceAttachedHorizontalD
                 AccessNetwork readerNet = reader.getAccessNetwork();
 
                 if (keycardNet == null || readerNet == null) return InteractionResult.PASS;
-                if (keycardNet != readerNet) return InteractionResult.PASS;
+                if (keycardNet != readerNet) return tryOverride(reader, pLevel, pState, pPos, keycardNet, keycardItem.getAccessLevel(item, pLevel), InteractionResult.PASS);
 
                 AccessLevel keycardAL = keycardItem.getAccessLevel(item, pLevel);
                 ArrayList<AccessLevel> readerALs = reader.getAccessLevels();
 
-                if (keycardAL == null || readerALs == null || readerALs.size() == 0) return onFail(pLevel, pState, pPos);
+                if (keycardAL == null || readerALs == null || readerALs.size() == 0) return onFail(reader, pLevel, pState, pPos);
 
                 if (switch (reader.getCompareMode()) {
                     case SPECIFIC -> readerALs.contains(keycardAL);
                     case BIGGER_THAN_OR_EQUAL -> keycardAL.getPriority() >= readerALs.get(0).getPriority();
                     case LESSER_THAN_OR_EQUAL -> keycardAL.getPriority() <= readerALs.get(0).getPriority();
                 }) {
-                    reader.interact();
-                    return onSuccess(pLevel, pState, pPos);
+                    return onSuccess(reader, pLevel, pState, pPos);
                 } else {
-                    return onFail(pLevel, pState, pPos);
+                    return tryOverride(reader, pLevel, pState, pPos, keycardNet, keycardAL, InteractionResult.PASS);
                 }
             }
         }
@@ -139,13 +145,14 @@ public abstract class AbstractKeycardReaderBlock extends FaceAttachedHorizontalD
         return super.use(pState, pLevel, pPos, pPlayer, pHand, pHit);
     }
 
-    public InteractionResult onFail(Level pLevel, BlockState pState, BlockPos pPos) {
+    public InteractionResult onFail(KeycardReaderBlockEntity reader, Level pLevel, BlockState pState, BlockPos pPos) {
         pLevel.playSeededSound(null, pPos.getX(), pPos.getY(), pPos.getZ(),
                 AxessSoundRegistry.KEYCARD_READER_DECLINE.get(), SoundSource.BLOCKS, 1f, 1f, 0);
         return InteractionResult.SUCCESS;
     }
 
-    public InteractionResult onSuccess(Level pLevel, BlockState pState, BlockPos pPos) {
+    public InteractionResult onSuccess(KeycardReaderBlockEntity reader, Level pLevel, BlockState pState, BlockPos pPos) {
+        reader.interact();
         if (!pState.getValue(POWERED))
             pLevel.playSeededSound(null, pPos.getX() + 0.5f, pPos.getY() + 0.5f, pPos.getZ() + 0.5f,
                     AxessSoundRegistry.KEYCARD_READER_SUCCESS.get(), SoundSource.BLOCKS, 1f, 1f, 0);

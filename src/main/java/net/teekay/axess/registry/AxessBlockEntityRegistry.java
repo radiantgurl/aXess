@@ -24,6 +24,10 @@ public class AxessBlockEntityRegistry {
     // REGISTRY
     public static final RegistryObject<BlockEntityType<KeycardReaderBlockEntity>> KEYCARD_READER = registerKeycardReader(
             "keycard_reader", AxessBlockRegistry.KEYCARD_READER);
+    public static final RegistryObject<BlockEntityType<KeycardReaderBlockEntity>> MINI_KEYCARD_READER_LEFT = registerKeycardReader(
+            "mini_keycard_reader_left", AxessBlockRegistry.MINI_KEYCARD_READER_LEFT);
+    public static final RegistryObject<BlockEntityType<KeycardReaderBlockEntity>> MINI_KEYCARD_READER_RIGHT = registerKeycardReader(
+            "mini_keycard_reader_right", AxessBlockRegistry.MINI_KEYCARD_READER_RIGHT);
 
     public static final RegistryObject<BlockEntityType<KeycardEditorBlockEntity>> KEYCARD_EDITOR = DEFERRED_REGISTER.register("keycard_editor",
             () -> BlockEntityType.Builder.of(

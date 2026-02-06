@@ -8,7 +8,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.teekay.axess.Axess;
 import net.teekay.axess.registry.AxessIconRegistry;
-import net.teekay.axess.screen.component.AccessLevelEntry;
 import net.teekay.axess.screen.component.HumbleImageButton;
 import net.teekay.axess.utilities.AxessColors;
 

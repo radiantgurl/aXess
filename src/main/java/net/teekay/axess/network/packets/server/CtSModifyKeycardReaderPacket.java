@@ -1,5 +1,6 @@
 package net.teekay.axess.network.packets.server;
 
+import com.ibm.icu.impl.Pair;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -22,6 +23,7 @@ public class CtSModifyKeycardReaderPacket implements IAxessPacket {
     public BlockPos blockEntityPos;
     public UUID networkUUID;
     public ArrayList<UUID> accessLevelsUUIDs;
+    public ArrayList<Pair<UUID, UUID>> overrideAccessLevelsUUIDs;
     public AccessCompareMode compareMode;
     public AccessActivationMode activationMode;
     public int pulseDurationTicks;
@@ -29,10 +31,11 @@ public class CtSModifyKeycardReaderPacket implements IAxessPacket {
     public AxessIconRegistry.AxessIcon overrideIcon;
     public Color overrideColor;
 
-    public CtSModifyKeycardReaderPacket(BlockPos blockEntityPos, AccessNetwork network, ArrayList<AccessLevel> levels, AccessCompareMode compareMode, AccessActivationMode activationMode, int pulseDurationTicks, boolean overrideDisplay, AxessIconRegistry.AxessIcon overrideIcon, Color overrideColor) {
+    public CtSModifyKeycardReaderPacket(BlockPos blockEntityPos, AccessNetwork network, ArrayList<AccessLevel> levels, ArrayList<Pair<AccessNetwork, AccessLevel>> overrideLevels, AccessCompareMode compareMode, AccessActivationMode activationMode, int pulseDurationTicks, boolean overrideDisplay, AxessIconRegistry.AxessIcon overrideIcon, Color overrideColor) {
         this.blockEntityPos = blockEntityPos;
         this.networkUUID = network.getUUID();
         this.accessLevelsUUIDs = new ArrayList<>();
+        this.overrideAccessLevelsUUIDs = new ArrayList<>();
 
         this.compareMode = compareMode;
         this.activationMode = activationMode;
@@ -41,6 +44,11 @@ public class CtSModifyKeycardReaderPacket implements IAxessPacket {
         for (AccessLevel level :
                 levels) {
             this.accessLevelsUUIDs.add(level.getUUID());
+        }
+
+        for (Pair<AccessNetwork, AccessLevel> pair :
+                overrideLevels) {
+            this.overrideAccessLevelsUUIDs.add(Pair.of(pair.first.getUUID(), pair.second.getUUID()));
         }
 
         this.overrideDisplay = overrideDisplay;
@@ -53,13 +61,23 @@ public class CtSModifyKeycardReaderPacket implements IAxessPacket {
         this.networkUUID = buffer.readUUID();
 
         this.accessLevelsUUIDs = new ArrayList<>();
+        this.overrideAccessLevelsUUIDs = new ArrayList<>();
 
+        CompoundTag dataTag = buffer.readNbt();
 
-        ListTag list = (ListTag) buffer.readNbt().get("Data");
+        ListTag list = (ListTag) dataTag.get("Levels");
 
         for (int i = 0; i < list.size(); i++) {
             UUID uuid = ((CompoundTag)list.get(i)).getUUID("UUID");
             this.accessLevelsUUIDs.add(uuid);
+        }
+
+        ListTag olist = (ListTag)dataTag.get("OverrideLevels");
+
+        for (int i = 0; i < olist.size(); i++) {
+            UUID netUuid = ((CompoundTag)olist.get(i)).getUUID("NetworkUUID");
+            UUID levelUuid = ((CompoundTag)olist.get(i)).getUUID("LevelUUID");
+            this.overrideAccessLevelsUUIDs.add(Pair.of(netUuid, levelUuid));
         }
 
         this.compareMode = buffer.readEnum(AccessCompareMode.class);
@@ -75,6 +93,7 @@ public class CtSModifyKeycardReaderPacket implements IAxessPacket {
     public void encode(FriendlyByteBuf buffer) {
         buffer.writeBlockPos(blockEntityPos);
         buffer.writeUUID(networkUUID);
+
         ListTag listTag = new ListTag();
 
         for (UUID uuid :
@@ -84,8 +103,19 @@ public class CtSModifyKeycardReaderPacket implements IAxessPacket {
             listTag.add(newTag);
         }
 
+        ListTag olistTag = new ListTag();
+
+        for (Pair<UUID,UUID> pair :
+                overrideAccessLevelsUUIDs) {
+            CompoundTag newTag = new CompoundTag();
+            newTag.putUUID("NetworkUUID", pair.first);
+            newTag.putUUID("LevelUUID", pair.second);
+            olistTag.add(newTag);
+        }
+
         CompoundTag dataTag = new CompoundTag();
-        dataTag.put("Data", listTag);
+        dataTag.put("Levels", listTag);
+        dataTag.put("OverrideLevels", olistTag);
         buffer.writeNbt(dataTag);
 
         buffer.writeEnum(compareMode);
@@ -133,6 +163,16 @@ public class CtSModifyKeycardReaderPacket implements IAxessPacket {
                     accessLevels.add(accessLevel);
                 }
 
+                ArrayList<Pair<AccessNetwork, AccessLevel>> overrideAccessLevels = new ArrayList<>();
+                for (Pair<UUID, UUID> pair :
+                        overrideAccessLevelsUUIDs) {
+                    AccessNetwork net = serverNetworkData.getNetwork(pair.first);
+                    if (net == null) continue;
+                    AccessLevel level = net.getAccessLevel(pair.second);
+                    if (level == null) continue;
+                    overrideAccessLevels.add(Pair.of(net, level));
+                }
+
                 if (compareMode != null)
                     keycardEditor.setCompareMode(compareMode);
 
@@ -152,6 +192,8 @@ public class CtSModifyKeycardReaderPacket implements IAxessPacket {
 
                 keycardEditor.setAccessNetwork(network);
                 keycardEditor.setAccessLevels(accessLevels);
+
+                keycardEditor.setOverrideAccessLevels(overrideAccessLevels);
 
                 keycardEditor.setChanged();
                 keycardEditor.execOnReaderPair(KeycardReaderBlockEntity::setChanged);

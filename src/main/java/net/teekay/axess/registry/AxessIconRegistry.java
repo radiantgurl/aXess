@@ -127,13 +127,32 @@ public class AxessIconRegistry {
     public static AxessIcon SQUARE_NINE = registerIcon("square_nine");
 
     // GREEK ALPHABET
-    public static AxessIcon PI = registerIcon("pi");
-    public static AxessIcon PHI = registerIcon("phi");
-    public static AxessIcon LAMBDA = registerIcon("lambda");
-    public static AxessIcon OMEGA = registerIcon("omega");
-    public static AxessIcon PSI = registerIcon("psi");
-    public static AxessIcon THETA = registerIcon("theta");
+    public static AxessIcon ALPHA = registerIcon("alpha");
+    public static AxessIcon BETA = registerIcon("beta");
+    public static AxessIcon GAMMA = registerIcon("gamma");
     public static AxessIcon DELTA = registerIcon("delta");
+    public static AxessIcon EPSILON = registerIcon("epsilon");
+    public static AxessIcon ZETA = registerIcon("zeta");
+    public static AxessIcon ETA = registerIcon("eta");
+    public static AxessIcon THETA = registerIcon("theta");
+    public static AxessIcon IOTA = registerIcon("iota");
+    public static AxessIcon KAPPA = registerIcon("kappa");
+    public static AxessIcon LAMBDA = registerIcon("lambda");
+    public static AxessIcon MU = registerIcon("mu");
+    public static AxessIcon VU = registerIcon("vu");
+    public static AxessIcon XI = registerIcon("xi");
+    public static AxessIcon OMICRON = registerIcon("omicron");
+    public static AxessIcon PI = registerIcon("pi");
+    public static AxessIcon RHO = registerIcon("rho");
+    public static AxessIcon SIGMA = registerIcon("sigma");
+    public static AxessIcon TAU = registerIcon("tau");
+    public static AxessIcon UPSILON = registerIcon("upsilon");
+    public static AxessIcon PHI = registerIcon("phi");
+    public static AxessIcon CHI = registerIcon("chi");
+    public static AxessIcon PSI = registerIcon("psi");
+    public static AxessIcon OMEGA = registerIcon("omega");
+
+
 
     // SHAPES
     public static AxessIcon SQUARE = registerIcon("square");

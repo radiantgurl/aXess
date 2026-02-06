@@ -1,5 +1,6 @@
 package net.teekay.axess.screen.component;
 
+import com.ibm.icu.impl.Pair;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 import net.teekay.axess.Axess;
@@ -12,8 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class AccessLevelList {
-    private final List<AccessLevelEntry> buttons = new ArrayList<>();
+public class NetworkAndLevelList {
+    private final List<NetworkAndLevelEntry> buttons = new ArrayList<>();
 
     private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(Axess.MODID, "textures/gui/network_manager.png");
 
@@ -27,15 +28,15 @@ public class AccessLevelList {
 
     private int scrollerWidth = 4;
 
-    Consumer<AccessLevel> onSelect;
+    Consumer<Pair<AccessNetwork, AccessLevel>> onDelete;
 
-    public AccessLevelList(int leftPos, int topPos, int width, int height, Consumer<AccessLevel> onSelect) {
+    public NetworkAndLevelList(int leftPos, int topPos, int width, int height, Consumer<Pair<AccessNetwork, AccessLevel>> onDelete) {
         this.width = width;
         this.height = height;
         this.leftPos = leftPos;
         this.topPos = topPos;
 
-        this.onSelect = onSelect;
+        this.onDelete = onDelete;
     }
 
     private void updateMaxScroll() {
@@ -43,11 +44,22 @@ public class AccessLevelList {
         this.maxScrollPos = totalHeight - height;
     }
 
-    public AccessLevelEntry addElement(AccessLevel level) {
-        AccessLevelEntry newButton = new AccessLevelEntry(this, level, onSelect);
+    public NetworkAndLevelEntry addElement(Pair<AccessNetwork, AccessLevel> pair, boolean withOptions) {
+        NetworkAndLevelEntry newButton = new NetworkAndLevelEntry(this, pair, withOptions, (toDelete) -> {
+            onDelete.accept(toDelete);
+        });
         buttons.add(newButton);
         updateMaxScroll();
         return newButton;
+    }
+
+    public void removeElement(Pair<AccessNetwork, AccessLevel> pair, Consumer<NetworkAndLevelEntry> toRemove){
+        buttons.removeIf((elem) -> {
+            boolean a = elem.pair == pair;
+            if (a) toRemove.accept(elem);
+            return a;
+        });
+        updateMaxScroll();
     }
 
 
@@ -60,12 +72,15 @@ public class AccessLevelList {
         graphics.fill(leftPos+width+1, topPos+scrollerPos, leftPos+width+1+scrollerWidth, topPos+scrollerPos+scrollerHeight, AxessColors.MAIN.getRGB());
 
         for (int index = 0; index < buttons.size(); index++) {
-            AccessLevelEntry levelButton = buttons.get(index);
+            NetworkAndLevelEntry button = buttons.get(index);
 
             int yPos = topPos + index * elemHeight - scrollPos + index * padding;
 
-            levelButton.button.setY(yPos);
-            levelButton.button.render(graphics, mouseX, mouseY, partialTick);
+            button.button.setY(yPos);
+            button.trashButton.setY(yPos);
+
+            button.button.render(graphics, mouseX, mouseY, partialTick);
+            button.trashButton.render(graphics, mouseX, mouseY, partialTick);
 
             //graphics.drawString(Minecraft.getInstance().font, network.getName(), leftPos + 4, yPos + (elemHeight - 7) / 2, 0xFFFFFF);
         }

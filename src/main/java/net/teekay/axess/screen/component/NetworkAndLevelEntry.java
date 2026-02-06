@@ -1,28 +1,29 @@
 package net.teekay.axess.screen.component;
 
-import net.minecraft.client.gui.components.Button;
+import com.ibm.icu.impl.Pair;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.teekay.axess.Axess;
+import net.teekay.axess.access.AccessLevel;
 import net.teekay.axess.access.AccessNetwork;
 import net.teekay.axess.client.AxessClientMenus;
 
 import java.util.function.Consumer;
 
-public class NetworkEntry {
+public class NetworkAndLevelEntry {
     public static ResourceLocation TRASH_BUTTON = ResourceLocation.fromNamespaceAndPath(Axess.MODID, "textures/gui/delete_button.png");
 
     private static final Component EDIT_TEXT = Component.translatable("gui."+Axess.MODID+".button.edit");
     private static final Component DELETE_TEXT = Component.translatable("gui."+Axess.MODID+".button.delete");
 
-    public AccessNetwork network;
+    public Pair<AccessNetwork, AccessLevel> pair;
     public TexturedButton button;
     public HumbleImageButton trashButton;
 
     public boolean hasOptions;
 
-    public NetworkEntry(NetworkList list, AccessNetwork network, boolean withOptions, Consumer<AccessNetwork> onSelect)
+    public NetworkAndLevelEntry(NetworkAndLevelList list, Pair<AccessNetwork, AccessLevel> pair, boolean withOptions, Consumer<Pair<AccessNetwork, AccessLevel>> onDelete)
     {
         int pX = list.leftPos;
         int pY = list.topPos;
@@ -31,9 +32,7 @@ public class NetworkEntry {
 
         hasOptions = withOptions;
 
-        this.button = new TexturedButton(pX, pY, pWidth-21, pHeight, Component.literal(network.getName()), btn -> {
-            onSelect.accept(network);
-        });
+        this.button = new TexturedButton(pX, pY, pWidth-21, pHeight, Component.literal(pair.first.getName()+" - "+pair.second.getName()), btn -> {});
 
         this.trashButton = new HumbleImageButton(
                 pX + pWidth - 20,
@@ -46,7 +45,7 @@ public class NetworkEntry {
                 TRASH_BUTTON,
                 32, 64,
                 btn -> {
-                    AxessClientMenus.openNetworkDeletionScreen(network);
+                    onDelete.accept(pair);
                 });
 
 
@@ -54,16 +53,9 @@ public class NetworkEntry {
         this.button.setBounds(pX, pY, pX+pWidth, pY+list.height);
         this.trashButton.setBounds(pX, pY, pX+pWidth, pY+list.height);
 
-        if (!withOptions) {
-            this.trashButton.active = false;
-            this.trashButton.visible = false;
-            this.button.setWidth(pWidth);
-        } else {
-            this.button.setTooltip(Tooltip.create(EDIT_TEXT));
-            this.trashButton.setTooltip(Tooltip.create(DELETE_TEXT));
-        }
+        this.trashButton.setTooltip(Tooltip.create(DELETE_TEXT));
 
-        this.network = network;
+        this.pair = pair;
     }
 
 }

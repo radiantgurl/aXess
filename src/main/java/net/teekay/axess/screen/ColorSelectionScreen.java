@@ -9,21 +9,12 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.teekay.axess.Axess;
-import net.teekay.axess.access.AccessNetworkDataClient;
-import net.teekay.axess.client.AxessClientMenus;
-import net.teekay.axess.network.AxessPacketHandler;
-import net.teekay.axess.network.packets.server.CtSModifyNetworkPacket;
-import net.teekay.axess.registry.AxessIconRegistry;
-import net.teekay.axess.screen.component.AccessLevelEntry;
 import net.teekay.axess.screen.component.HumbleImageButton;
 import net.teekay.axess.utilities.AxessColors;
 import net.teekay.axess.utilities.MathUtil;
-import org.checkerframework.checker.units.qual.C;
 
 import java.awt.*;
 import java.util.ArrayList;
-import java.util.Objects;
-import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 
 public class ColorSelectionScreen extends Screen {

@@ -20,7 +20,8 @@
   "item.axess.linker.clear_links": "Cleared links",
 
   "block.axess.keycard_reader": "Keycard Reader",
-  "block.axess.iron_keycard_reader": "Iron Keycard Reader",
+  "block.axess.mini_keycard_reader_left": "Mini Keycard Reader (Left)",
+  "block.axess.mini_keycard_reader_right": "Mini Keycard Reader (Right)",
 
   "block.axess.network_manager": "Network Manager",
   "block.axess.keycard_editor": "Keycard Editor",
@@ -48,6 +49,7 @@
   "gui.axess.button.add_access_level": "New access level",
   "gui.axess.button.change_color": "Change color",
   "gui.axess.button.change_icon": "Change icon",
+  "gui.axess.button.add_override": "Add override",
 
   "gui.axess.input.network_name": "Network name",
   "gui.axess.input.access_level_name": "Access level name",
@@ -94,5 +96,9 @@
   "gui.axess.activation_mode.PULSE": "Pulse",
   "gui.axess.activation_mode.PULSE.description": "The reader outputs redstone signal for the selected duration.",
   "gui.axess.activation_mode.TOGGLE": "Toggle",
-  "gui.axess.activation_mode.TOGGLE.description": "The reader outputs redstone signal until it is deactivated manually."
+  "gui.axess.activation_mode.TOGGLE.description": "The reader outputs redstone signal until it is deactivated manually.",
+
+  "gui.axess.access_level_selection_screen": "Select Access Level",
+  "gui.axess.network_selection_screen": "Select Network",
+  "gui.axess.keycard_reader_overrides": "Access Overrides"
 }

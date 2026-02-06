@@ -78,5 +78,23 @@ public class AxessRecipeProvider extends RecipeProvider implements IConditionBui
                 .unlockedBy(getHasName(Items.IRON_INGOT), has(Items.IRON_INGOT))
                 .save(pWriter);
 
+        ShapedRecipeBuilder.shaped(RecipeCategory.REDSTONE, AxessBlockRegistry.MINI_KEYCARD_READER_LEFT.get())
+                .pattern("   ")
+                .pattern("ST ")
+                .pattern("   ")
+                .define('S', Items.IRON_INGOT)
+                .define('T', AxessBlockRegistry.KEYCARD_READER.get())
+                .unlockedBy(getHasName(Items.IRON_INGOT), has(Items.IRON_INGOT))
+                .save(pWriter);
+
+        ShapedRecipeBuilder.shaped(RecipeCategory.REDSTONE, AxessBlockRegistry.MINI_KEYCARD_READER_RIGHT.get())
+                .pattern("   ")
+                .pattern(" TS")
+                .pattern("   ")
+                .define('S', Items.IRON_INGOT)
+                .define('T', AxessBlockRegistry.KEYCARD_READER.get())
+                .unlockedBy(getHasName(Items.IRON_INGOT), has(Items.IRON_INGOT))
+                .save(pWriter);
+
     }
 }

@@ -1,5 +1,6 @@
 package net.teekay.axess.block.readers;
 
+import com.ibm.icu.impl.Pair;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -33,6 +34,7 @@ public class KeycardReaderBlockEntity extends BlockEntity implements MenuProvide
 
     private UUID networkID = null;
     private ArrayList<UUID> accessLevelIDs = new ArrayList<>();
+    private ArrayList<Pair<UUID, UUID>> overrideAccessLevelsIDs = new ArrayList<>();
     private AccessCompareMode compareMode = AccessCompareMode.BIGGER_THAN_OR_EQUAL;
     private AccessActivationMode activationMode = AccessActivationMode.TOGGLE;
     private int pulseDurationTicks = 30;
@@ -51,6 +53,7 @@ public class KeycardReaderBlockEntity extends BlockEntity implements MenuProvide
     private UUID display_pairID = null;
 
     public static final String ACCESS_LEVELS_KEY = "AccessLevels";
+    public static final String OVERRIDE_ACCESS_LEVELS_KEY = "OverrideAccessLevels";
     public static final String ACCESS_NETWORK_KEY  = "AccessNetwork";
     public static final String COMPARE_MODE_KEY  = "CompareMode";
     public static final String ACTIVATION_MODE_KEY  = "ActivationMode";
@@ -154,11 +157,7 @@ public class KeycardReaderBlockEntity extends BlockEntity implements MenuProvide
 
     @Nullable
     public AccessNetwork getAccessNetwork() {
-        if (this.level == null || this.level.isClientSide) {
-            return AccessNetworkDataClient.getNetwork(networkID);
-        } else {
-            return AccessNetworkDataServer.get(this.level.getServer()).getNetwork(networkID);
-        }
+        return AccessUtils.getAccessNetworkFromID(networkID, level);
     }
 
     @Nullable
@@ -175,6 +174,22 @@ public class KeycardReaderBlockEntity extends BlockEntity implements MenuProvide
         }
 
         return levels;
+    }
+
+    public ArrayList<Pair<AccessNetwork, AccessLevel>> getOverrideAccessLevels() {
+        ArrayList<Pair<AccessNetwork, AccessLevel>> oLevels = new ArrayList<>();
+
+        for (Pair<UUID, UUID> pair : overrideAccessLevelsIDs) {
+            AccessNetwork net = AccessUtils.getAccessNetworkFromID(pair.first, level);
+            if (net == null) continue;
+
+            AccessLevel level = net.getAccessLevel(pair.second);
+            if (level == null)  continue;
+
+            oLevels.add(Pair.of(net, level));
+        }
+
+        return oLevels;
     }
 
     public AccessCompareMode getCompareMode() {
@@ -307,6 +322,17 @@ public class KeycardReaderBlockEntity extends BlockEntity implements MenuProvide
         }
     }
 
+    public void setOverrideAccessLevels(ArrayList<Pair<AccessNetwork, AccessLevel>> levels) {
+        if (levels == null || levels.size() == 0) { overrideAccessLevelsIDs.clear(); return; }
+
+        overrideAccessLevelsIDs.clear();
+
+        for (Pair<AccessNetwork, AccessLevel> levelPair :
+                levels) {
+            overrideAccessLevelsIDs.add(Pair.of(levelPair.first.getUUID(), levelPair.second.getUUID()));
+        }
+    }
+
     public void setCompareMode(AccessCompareMode compareMode) {
         this.compareMode = compareMode;
     }
@@ -360,6 +386,20 @@ public class KeycardReaderBlockEntity extends BlockEntity implements MenuProvide
             modTag.put(ACCESS_LEVELS_KEY, accessLevelsTag);
         }
 
+        // OVERRIDE ACCESS LEVELS
+        ListTag accessLevelsTag = new ListTag();
+
+        for (Pair<UUID, UUID> p :
+                overrideAccessLevelsIDs) {
+            CompoundTag x = new CompoundTag();
+            x.putUUID("NetworkUUID", p.first);
+            x.putUUID("LevelUUID", p.second);
+            accessLevelsTag.add(x);
+        }
+
+        modTag.put(OVERRIDE_ACCESS_LEVELS_KEY, accessLevelsTag);
+        // END
+
         modTag.putString(COMPARE_MODE_KEY, compareMode.toString());
         modTag.putString(ACTIVATION_MODE_KEY, activationMode.toString());
         modTag.putInt(PULSE_DURATION_TICKS_KEY, pulseDurationTicks);
@@ -395,6 +435,16 @@ public class KeycardReaderBlockEntity extends BlockEntity implements MenuProvide
 
             for (int i = 0; i < accessLevelsTag.size(); i++) {
                 accessLevelIDs.add(((CompoundTag)accessLevelsTag.get(i)).getUUID("UUID"));
+            }
+        }
+
+        if (modTag.contains(OVERRIDE_ACCESS_LEVELS_KEY) && modTag.get(OVERRIDE_ACCESS_LEVELS_KEY) != null) {
+            ListTag overrideAccessLevelsTag = (ListTag) modTag.get(OVERRIDE_ACCESS_LEVELS_KEY);
+            overrideAccessLevelsIDs.clear();
+
+            for (int i = 0; i < overrideAccessLevelsTag.size(); i++) {
+                CompoundTag tag = (CompoundTag)overrideAccessLevelsTag.get(i);
+                overrideAccessLevelsIDs.add(Pair.of(tag.getUUID("NetworkUUID"), tag.getUUID("LevelUUID")));
             }
         }
 

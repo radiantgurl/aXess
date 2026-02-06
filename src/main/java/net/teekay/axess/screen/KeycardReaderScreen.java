@@ -1,5 +1,6 @@
 package net.teekay.axess.screen;
 
+import com.ibm.icu.impl.Pair;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -13,6 +14,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.teekay.axess.Axess;
 import net.teekay.axess.access.*;
 import net.teekay.axess.block.readers.KeycardReaderBlockEntity;
+import net.teekay.axess.client.AxessClientMenus;
 import net.teekay.axess.network.AxessPacketHandler;
 import net.teekay.axess.network.packets.server.CtSModifyKeycardReaderPacket;
 import net.teekay.axess.registry.AxessIconRegistry;
@@ -28,6 +30,8 @@ import java.util.List;
 public class KeycardReaderScreen extends AbstractContainerScreen<KeycardReaderMenu> {
     public static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(Axess.MODID, "textures/gui/keycard_reader.png");
     private static final ResourceLocation CONFIRM_BUTTON_TEXTURE = ResourceLocation.fromNamespaceAndPath(Axess.MODID, "textures/gui/confirm_button.png");
+    private static final ResourceLocation LIST_BUTTON_TEXTURE = ResourceLocation.fromNamespaceAndPath(Axess.MODID, "textures/gui/list_button.png");
+    private static final Component OVERRIDES_LABEL = Component.translatable("gui."+Axess.MODID+".keycard_reader_overrides");
 
     public static final Component TITLE_LABEL = Component.translatable("gui."+Axess.MODID+".keycard_reader");
     public static final Component NO_NETWORK_LABEL = Component.translatable("gui."+Axess.MODID+".keycard_reader.no_network");
@@ -47,6 +51,7 @@ public class KeycardReaderScreen extends AbstractContainerScreen<KeycardReaderMe
 
     private AccessNetwork selectedNetwork;
     private ArrayList<AccessLevel> selectedLevels = new ArrayList<>();
+    private ArrayList<Pair<AccessNetwork, AccessLevel>> selectedOverrideLevels = new ArrayList<>();
     private AccessActivationMode selectedActivationMode;
     private AccessCompareMode selectedCompareMode;
     private int selectedPulseDurationTicks;
@@ -64,6 +69,8 @@ public class KeycardReaderScreen extends AbstractContainerScreen<KeycardReaderMe
     private IconSelectorButton iconSelectorButton;
     private ColorSelectorButton colorSelectorButton;
     private TexturedCheckbox overrideDisplayCheckbox;
+
+    private HumbleImageButton overridesButton;
 
     private int scrollerWidth = 3;
 
@@ -97,7 +104,7 @@ public class KeycardReaderScreen extends AbstractContainerScreen<KeycardReaderMe
                         32, 96,
                         btn -> {
                             if (menu.blockEntity == null || selectedNetwork == null || selectedLevels.isEmpty()) return;
-                            AxessPacketHandler.sendToServer(new CtSModifyKeycardReaderPacket(menu.blockEntity.getBlockPos(), selectedNetwork, selectedLevels, selectedCompareMode, selectedActivationMode, selectedPulseDurationTicks, selectedOverrideDisplay, selectedOverrideIcon, selectedOverrideColor));
+                            AxessPacketHandler.sendToServer(new CtSModifyKeycardReaderPacket(menu.blockEntity.getBlockPos(), selectedNetwork, selectedLevels, selectedOverrideLevels, selectedCompareMode, selectedActivationMode, selectedPulseDurationTicks, selectedOverrideDisplay, selectedOverrideIcon, selectedOverrideColor));
                         })
         );
         this.applyButton.active = false;
@@ -193,6 +200,24 @@ public class KeycardReaderScreen extends AbstractContainerScreen<KeycardReaderMe
                 this.selectedOverrideColor, color -> this.selectedOverrideColor = color, btn -> {}));
         this.colorSelectorButton.active = this.selectedOverrideDisplay;
 
+        this.selectedOverrideLevels = this.menu.blockEntity.getOverrideAccessLevels();
+        this.overridesButton = addRenderableWidget(
+                new HumbleImageButton(
+                        this.leftPos + 229,
+                        this.topPos + 128,
+                        20,
+                        20,
+                        0,
+                        0,
+                        20,
+                        LIST_BUTTON_TEXTURE,
+                        32, 64,
+                        btn -> {
+                            AxessClientMenus.openKeycardOverridesScreen(selectedOverrideLevels);
+                        })
+        );
+        this.overridesButton.setTooltip(Tooltip.create(OVERRIDES_LABEL));
+
         updateEntries();
     }
 
@@ -265,8 +290,9 @@ public class KeycardReaderScreen extends AbstractContainerScreen<KeycardReaderMe
             textComp = NO_LEVEL_LABEL;
         } else {
             KeycardReaderBlockEntity entity = this.menu.blockEntity;
-            boolean levelsDiff = true;
 
+
+            boolean levelsDiff = true;
             if (entity.getAccessLevels().size() == selectedLevels.size()) {
                 int cnt = 0;
                 for (AccessLevel level :
@@ -279,9 +305,33 @@ public class KeycardReaderScreen extends AbstractContainerScreen<KeycardReaderMe
                 if (cnt == selectedLevels.size()) levelsDiff = false;
             }
 
+            boolean overrideLevelsDiff = true;
+            ArrayList<Pair<AccessNetwork, AccessLevel>> beforePairs = entity.getOverrideAccessLevels();
+            if (beforePairs.size() == selectedOverrideLevels.size()) {
+                int cnt = 0;
+                for (Pair<AccessNetwork, AccessLevel> pair :
+                        selectedOverrideLevels) {
+                    boolean found = false;
+
+                    for (Pair<AccessNetwork, AccessLevel> otherPair :
+                            beforePairs) {
+                        if (pair.first.getUUID() == otherPair.first.getUUID() && pair.second.getUUID() == otherPair.second.getUUID()) {
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    cnt++;
+                }
+
+
+                if (cnt == selectedOverrideLevels.size()) overrideLevelsDiff = false;
+            }
+
             if (
                 entity.getAccessNetwork() != selectedNetwork ||
                 levelsDiff ||
+                overrideLevelsDiff ||
                 selectedCompareMode != menu.blockEntity.getCompareMode() ||
                 selectedActivationMode != menu.blockEntity.getActivationMode() ||
                 selectedPulseDurationTicks != menu.blockEntity.getPulseDurationTicks() ||

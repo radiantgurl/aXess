@@ -4,11 +4,17 @@ import com.mojang.blaze3d.vertex.*;
 import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.*;
+import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.AttachFace;
+import net.teekay.axess.Axess;
 import net.teekay.axess.access.AccessLevel;
 import net.teekay.axess.block.receiver.ReceiverBlockEntity;
 import net.teekay.axess.item.LinkerItem;
@@ -17,6 +23,7 @@ import net.teekay.axess.utilities.AxessColors;
 import net.teekay.axess.utilities.RenderingUtilities;
 import net.teekay.axess.utilities.RotationUtilities;
 
+import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
@@ -26,8 +33,12 @@ import java.util.ArrayList;
 public class KeycardReaderBlockEntityRenderer implements BlockEntityRenderer<KeycardReaderBlockEntity> {
     private final BlockEntityRendererProvider.Context context;
 
+    private final RandomSource rS;
+
     public KeycardReaderBlockEntityRenderer(BlockEntityRendererProvider.Context ctx) {
         this.context = ctx;
+        this.rS = RandomSource.create(0);
+
     }
 
     public static final AxessIconRegistry.AxessIcon ALLOW_ICON = AxessIconRegistry.ACCEPT;
@@ -35,14 +46,59 @@ public class KeycardReaderBlockEntityRenderer implements BlockEntityRenderer<Key
 
     public static final float CYCLE_TIME = 20F;
 
+    public void renderIconQuad(
+            BakedQuad originalQuad,
+            PoseStack poseStack,
+            VertexConsumer consumer,
+            Color color) {
+
+        if (originalQuad.getTintIndex() != 1) return;
+
+        PoseStack.Pose pose = poseStack.last();
+        Matrix4f mat = pose.pose();
+        Matrix3f normalMat = pose.normal();
+
+        int[] verts = originalQuad.getVertices();
+
+        for (int i = 0; i < 4; i++) {
+            int base = i * 8;
+
+            float x = Float.intBitsToFloat(verts[base + 0]);
+            float y = Float.intBitsToFloat(verts[base + 1]);
+            float z = Float.intBitsToFloat(verts[base + 2]);
+
+            float nx = originalQuad.getDirection().getStepX();
+            float ny = originalQuad.getDirection().getStepY();
+            float nz = originalQuad.getDirection().getStepZ();
+
+            float u = (i == 0 || i == 1) ? 1f : 0f;
+            float v = (i == 0 || i == 3) ? 1f : 0f;
+
+            consumer.vertex(mat, x, y, z)
+                    .color(color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f, 1f)
+                    .uv(u, v)
+                    .overlayCoords(OverlayTexture.WHITE_OVERLAY_V)
+                    .uv2(LightTexture.FULL_BRIGHT)
+                    .normal(normalMat, nx, ny, nz)
+                    .endVertex();
+        }
+    }
+
+
     @Override
     public void render(KeycardReaderBlockEntity pBlockEntity, float pPartialTick, PoseStack pPoseStack, MultiBufferSource pBuffer, int pPackedLight, int pPackedOverlay) {
 
-        Direction facing = pBlockEntity.getBlockState().getValue(AbstractKeycardReaderBlock.FACING);
-        AttachFace face = pBlockEntity.getBlockState().getValue(AbstractKeycardReaderBlock.FACE);
-        boolean powerState = pBlockEntity.getBlockState().getValue(AbstractKeycardReaderBlock.POWERED);
+        BakedModel model = Minecraft.getInstance()
+                .getBlockRenderer()
+                .getBlockModel(pBlockEntity.getBlockState());
 
-        pPoseStack.pushPose();
+        BlockState state = pBlockEntity.getBlockState();
+
+        Direction facing = state.getValue(AbstractKeycardReaderBlock.FACING);
+        AttachFace face = state.getValue(AbstractKeycardReaderBlock.FACE);
+        boolean powerState = state.getValue(AbstractKeycardReaderBlock.POWERED);
+
+       /* pPoseStack.pushPose();
 
         Vector3f rot = RotationUtilities.rotationFromDirAndFace(facing, face);
 
@@ -55,6 +111,9 @@ public class KeycardReaderBlockEntityRenderer implements BlockEntityRenderer<Key
         pPoseStack.translate(0f, -2f/16f, 6f/16f - 0.001f);
 
         pPoseStack.scale(6/16f, 6/16f, 6/16f);
+
+        pPoseStack.popPose();
+        */
 
         AxessIconRegistry.AxessIcon icon = null;
         Color color = AxessColors.MAIN;
@@ -76,21 +135,26 @@ public class KeycardReaderBlockEntityRenderer implements BlockEntityRenderer<Key
         }
 
 
-
-
         VertexConsumer consumer = pBuffer.getBuffer(RenderType.eyes(icon != null ? icon.TEXTURE : NONE_ICON.TEXTURE));
-        Matrix4f matrix = pPoseStack.last().pose();
 
-        int r = color.getRed();
-        int g = color.getGreen();
-        int b = color.getBlue();
 
-        consumer.vertex(matrix, 0.5f, 0f, 0f).color(r, g, b, 255).uv(0, 1).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(LightTexture.pack(15, 15)).normal(0, 1, 0).endVertex();
-        consumer.vertex(matrix, -0.5f, 0f, 0f).color(r, g, b, 255).uv(1, 1).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(LightTexture.pack(15, 15)).normal(0, 1, 0).endVertex();
-        consumer.vertex(matrix, -0.5f, 1f, 0f).color(r, g, b, 255).uv(1, 0).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(LightTexture.pack(15, 15)).normal(0, 1, 0).endVertex();
-        consumer.vertex(matrix, 0.5f, 1f, 0f).color(r, g, b, 255).uv(0, 0).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(LightTexture.pack(15, 15)).normal(0, 1, 0).endVertex();
 
-        pPoseStack.popPose();
+        //consumer.vertex(matrix, 0.5f, 0f, 0f).color(r, g, b, 255).uv(0, 1).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(LightTexture.pack(15, 15)).normal(0, 1, 0).endVertex();
+        //consumer.vertex(matrix, -0.5f, 0f, 0f).color(r, g, b, 255).uv(1, 1).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(LightTexture.pack(15, 15)).normal(0, 1, 0).endVertex();
+        //consumer.vertex(matrix, -0.5f, 1f, 0f).color(r, g, b, 255).uv(1, 0).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(LightTexture.pack(15, 15)).normal(0, 1, 0).endVertex();
+        //consumer.vertex(matrix, 0.5f, 1f, 0f).color(r, g, b, 255).uv(0, 0).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(LightTexture.pack(15, 15)).normal(0, 1, 0).endVertex();
+
+        for (Direction dir : Direction.values()) {
+            for (BakedQuad quad : model.getQuads(state, dir, rS)) {
+                renderIconQuad(quad, pPoseStack, consumer, color);
+            }
+        }
+
+        for (BakedQuad quad : model.getQuads(state, null, rS)) {
+            renderIconQuad(quad, pPoseStack, consumer, color);
+        }
+
+
 
 
         if (Minecraft.getInstance().player.getMainHandItem().getItem() instanceof LinkerItem) {

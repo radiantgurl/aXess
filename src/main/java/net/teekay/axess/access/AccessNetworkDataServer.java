@@ -1,27 +1,20 @@
 package net.teekay.axess.access;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.saveddata.SavedData;
-import net.minecraftforge.event.level.LevelEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.teekay.axess.Axess;
 import net.teekay.axess.AxessConfig;
 import net.teekay.axess.network.AxessPacketHandler;
 import net.teekay.axess.network.packets.client.StCNetworkDeletedPacket;
 import net.teekay.axess.network.packets.client.StCNetworkModifiedPacket;
-import net.teekay.axess.screen.component.NetworkEntry;
 import net.teekay.axess.utilities.AccessUtils;
-import org.checkerframework.checker.units.qual.A;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Random;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 @Mod.EventBusSubscriber(modid = Axess.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
@@ -86,12 +79,12 @@ public class AccessNetworkDataServer extends SavedData {
         // get count
         int networksCreatedByPlayer = networkRegistry.values().stream().filter( (net) -> net.isOwnedBy(player) ).toList().size();
 
-        return (networksCreatedByPlayer < AxessConfig.maxNetworksPerPlayer) && AccessUtils.canPlayerEditNetwork(player, network);
+        return (networksCreatedByPlayer < AxessConfig.getPlayerMaxNetworks(player)) && AccessUtils.canPlayerEditNetwork(player, network);
     }
 
-    public boolean validateNetwork(AccessNetwork network) {
+    public boolean validateNetwork(AccessNetwork network, ServerPlayer player) {
         // check level count
-        if (network.getAccessLevels().size() > AxessConfig.maxLevelsPerNetwork) return false;
+        if (network.getAccessLevels().size() > AxessConfig.getPlayerMaxLevelsPerNetwork(player)) return false;
 
         return true;
     }
@@ -99,7 +92,7 @@ public class AccessNetworkDataServer extends SavedData {
     public boolean playerModifyNetwork(ServerPlayer player, AccessNetwork network) {
         AccessNetwork networkToChange = getNetwork(network.getUUID());
 
-        if (!validateNetwork(network)) return false;
+        if (!validateNetwork(network, player)) return false;
 
         if (networkToChange == null && canPlayerCreateNetwork(player, network)) { // NETWORK BEING CREATED
             setNetwork(network);

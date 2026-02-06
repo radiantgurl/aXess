@@ -13,6 +13,7 @@ import net.teekay.axess.utilities.MathUtil;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class NetworkList {
     private final List<NetworkEntry> buttons = new ArrayList<>();
@@ -29,11 +30,15 @@ public class NetworkList {
 
     private int scrollerWidth = 4;
 
-    public NetworkList(int leftPos, int topPos, int width, int height) {
+    Consumer<AccessNetwork> onSelect;
+
+    public NetworkList(int leftPos, int topPos, int width, int height, Consumer<AccessNetwork> onSelect) {
         this.width = width;
         this.height = height;
         this.leftPos = leftPos;
         this.topPos = topPos;
+
+        this.onSelect = onSelect;
     }
 
     private void updateMaxScroll() {
@@ -41,8 +46,8 @@ public class NetworkList {
         this.maxScrollPos = totalHeight - height;
     }
 
-    public NetworkEntry addElement(AccessNetwork network) {
-        NetworkEntry newButton = new NetworkEntry(this, network);
+    public NetworkEntry addElement(AccessNetwork network, boolean withOptions) {
+        NetworkEntry newButton = new NetworkEntry(this, network, withOptions, onSelect);
         buttons.add(newButton);
         updateMaxScroll();
         return newButton;
