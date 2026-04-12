@@ -9,7 +9,7 @@ import net.teekay.axess.Axess;
 import net.teekay.axess.access.AccessLevel;
 import net.teekay.axess.screen.NetworkEditorScreen;
 import net.teekay.axess.utilities.AxessColors;
-import net.teekay.axess.utilities.MathUtil;
+import net.teekay.axess.utilities.MathUtilities;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -120,7 +120,7 @@ public class AccessLevelListEditor extends AbstractWidget {
             orderDirty = false;
         }
 
-        int predictedDraggableIndex = MathUtil.clampInt((mouseY - topPos + scrollPos) / (elemHeight + padding), 0, buttons.size() - 1);
+        int predictedDraggableIndex = MathUtilities.clampInt((mouseY - topPos + scrollPos) / (elemHeight + padding), 0, buttons.size() - 1);
         int initialDragIndex = dragging ? screen.network.getAccessLevels().size() - 1 - dragged.accessLevel.getPriority() : 0;
 
         int index = 0;
@@ -170,12 +170,8 @@ public class AccessLevelListEditor extends AbstractWidget {
 
     @Override
     public boolean mouseReleased(double pMouseX, double pMouseY, int pButton) {
-
+        if (screen.cantEdit) return super.mouseReleased(pMouseX, pMouseY, pButton);
         if (dragged == null) return super.mouseReleased(pMouseX, pMouseY, pButton);
-
-        //System.out.println(dragged.accessLevel.getDisplayName());
-        //System.out.println(lastPredictedDraggableIndex);
-        //System.out.println((network.getAccessLevels().size() - 1) - lastPredictedDraggableIndex);
 
         screen.network.moveLevelToPriority(dragged.accessLevel, (screen.network.getAccessLevels().size() - 1) - lastPredictedDraggableIndex);
         orderDirty = true;

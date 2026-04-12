@@ -1,5 +1,7 @@
 package net.teekay.axess.datagen;
 
+import net.minecraft.client.renderer.block.model.BlockModel;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.data.PackOutput;
 import net.minecraft.world.level.block.Block;
@@ -44,16 +46,7 @@ public class AxessBlockStateProvider extends BlockStateProvider {
         // RECEIVER
         Block receiver = AxessBlockRegistry.RECEIVER.get();
 
-        ModelFile offModel = getBlockModel("receiver_off");
-        ModelFile onModel = getBlockModel("receiver");
-
-        getVariantBuilder(receiver)
-                .partialState().with(ReceiverBlock.POWERED, false)
-                .modelForState().modelFile(offModel).addModel()
-                .partialState().with(ReceiverBlock.POWERED, true)
-                .modelForState().modelFile(onModel).addModel();
-
-        itemModels().getBuilder("receiver").parent(onModel);
+        receiverBlock(receiver, "receiver");
     }
 
     private ModelFile getBlockModel(String id) {
@@ -65,6 +58,46 @@ public class AxessBlockStateProvider extends BlockStateProvider {
         ModelFile readerModel = models().getExistingFile(modLoc("block/" + id));
         horizontalFaceBlock(reader,readerModel);
         itemModels().getBuilder(id).parent(readerModel);
+    }
+
+    private void receiverBlock(Block receiver, String id) {
+        ModelFile.ExistingModelFile on = models().getExistingFile(modLoc("block/"+id));
+        ModelFile.ExistingModelFile off = models().getExistingFile(modLoc("block/"+id+"_off"));
+        getVariantBuilder(receiver).forAllStates(blockState -> {
+            Direction facing = blockState.getValue(ReceiverBlock.FACING);
+            boolean powered = blockState.getValue(ReceiverBlock.POWERED);
+
+            int rotX = 0;
+            int rotY = 0;
+
+            switch (facing) {
+                case DOWN -> rotX = 180;
+                case UP -> rotX = 0;
+                case NORTH -> rotX = 90;
+                case SOUTH -> {
+                    rotX = 90;
+                    rotY = 180;
+                }
+                case WEST -> {
+                    rotX = 90;
+                    rotY = 270;
+                }
+                case EAST -> {
+                    rotX = 90;
+                    rotY = 90;
+                }
+            }
+
+            ModelFile.ExistingModelFile model = powered ? on : off;
+
+            return ConfiguredModel.builder()
+                    .modelFile(model)
+                    .rotationX(rotX)
+                    .rotationY(rotY)
+                    .build();
+        });
+
+        itemModels().getBuilder(id).parent(on);
     }
 
     private void blockWithItem(RegistryObject<Block> blockRegistryObject) {

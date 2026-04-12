@@ -10,11 +10,12 @@ import net.teekay.axess.AxessConfig;
 import net.teekay.axess.network.AxessPacketHandler;
 import net.teekay.axess.network.packets.client.StCNetworkDeletedPacket;
 import net.teekay.axess.network.packets.client.StCNetworkModifiedPacket;
-import net.teekay.axess.utilities.AccessUtils;
+import net.teekay.axess.utilities.AxessUtilities;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 
 @Mod.EventBusSubscriber(modid = Axess.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
@@ -32,8 +33,6 @@ public class AccessNetworkDataServer extends SavedData {
 
     @Override
     public CompoundTag save(CompoundTag tag) {
-        //System.out.println("[!] Saving access networks...");
-
         for (HashMap.Entry<UUID, AccessNetwork> networkEntry :
                 networkRegistry.entrySet()) {
 
@@ -48,7 +47,6 @@ public class AccessNetworkDataServer extends SavedData {
 
         for (String key : tag.getAllKeys()) {
             data.networkRegistry.put(UUID.fromString(key), AccessNetwork.fromNBT(tag.getCompound(key)));
-            //System.out.println("Sloaded " + key);
         }
 
         return data;
@@ -58,7 +56,7 @@ public class AccessNetworkDataServer extends SavedData {
         return networkRegistry;
     }
 
-    public ArrayList<AccessNetwork> getNetworks() { return (ArrayList<AccessNetwork>) networkRegistry.values().stream().toList(); }
+    public List<AccessNetwork> getNetworks() { return networkRegistry.values().stream().toList(); }
 
     @Nullable
     public AccessNetwork getNetwork(UUID uuid) {
@@ -75,13 +73,6 @@ public class AccessNetworkDataServer extends SavedData {
         AxessPacketHandler.sendToAllClients(new StCNetworkDeletedPacket(uuid));
     }
 
-    public boolean canPlayerCreateNetwork(ServerPlayer player, AccessNetwork network) {
-        // get count
-        int networksCreatedByPlayer = networkRegistry.values().stream().filter( (net) -> net.isOwnedBy(player) ).toList().size();
-
-        return (networksCreatedByPlayer < AxessConfig.getPlayerMaxNetworks(player)) && AccessUtils.canPlayerEditNetwork(player, network);
-    }
-
     public boolean validateNetwork(AccessNetwork network, ServerPlayer player) {
         // check level count
         if (network.getAccessLevels().size() > AxessConfig.getPlayerMaxLevelsPerNetwork(player)) return false;
@@ -94,28 +85,52 @@ public class AccessNetworkDataServer extends SavedData {
 
         if (!validateNetwork(network, player)) return false;
 
-        if (networkToChange == null && canPlayerCreateNetwork(player, network)) { // NETWORK BEING CREATED
-            setNetwork(network);
-            return true;
-        } else if (networkToChange != null && AccessUtils.canPlayerEditNetwork(player, networkToChange) && AccessUtils.canPlayerEditNetwork(player, network)) { // NETWORK EDITED
+
+        if (networkToChange != null) {  // NETWORK EXISTS
+            if (networkToChange.hasPermission(player, AccessPermission.ADMIN)) {
+                setNetwork(network);
+                return true;
+            }
+
+            boolean can_add = true;
+
+            // ACCESS LEVELS
+            if (AxessUtilities.getDiff(
+                    networkToChange.getAccessLevels(),
+                    network.getAccessLevels(),
+                    AccessLevel::strictEquals
+            )) {
+                can_add = networkToChange.hasPermission(player, AccessPermission.AL_EDIT);
+            }
+
+            network.setAllPermissions(networkToChange.getPermissions());
+
+            if (can_add) setNetwork(network);
+
+            return can_add;
+
+        } else {  // NETWORK BEING CREATED
+            int networksCreatedByPlayer = networkRegistry.values().stream().filter( (net) -> net.isOwnedBy(player) ).toList().size();
+            if (networksCreatedByPlayer >= AxessConfig.getPlayerMaxNetworks(player)) return false;
+
+            if (!network.isOwnedBy(player)) return false;
+
             setNetwork(network);
             return true;
         }
+    }
 
-        return false;
+    public boolean playerDeleteNetwork(ServerPlayer player, UUID network, boolean force) {
+        AccessNetwork networkToDelete = getNetwork(network);
+
+        if (!networkToDelete.isOwnedBy(player) && !force) return false;
+
+        removeNetwork(network);
+        return true;
     }
 
     public boolean playerDeleteNetwork(ServerPlayer player, UUID network) {
-        AccessNetwork networkToDelete = getNetwork(network);
-
-        if (!AccessUtils.canPlayerEditNetwork(player, networkToDelete)) {
-            //System.out.println(networkToDelete.getOwnerUUID() + " is not equal to " + player.getUUID());
-            return false;
-        }
-
-        removeNetwork(network);
-
-        return true;
+        return playerDeleteNetwork(player, network, false);
     }
 
 }

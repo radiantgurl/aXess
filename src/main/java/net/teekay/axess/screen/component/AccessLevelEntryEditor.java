@@ -14,7 +14,7 @@ public class AccessLevelEntryEditor extends AbstractWidget {
     public static ResourceLocation TRASH_BUTTON = ResourceLocation.fromNamespaceAndPath(Axess.MODID, "textures/gui/delete_button.png");
     public static ResourceLocation TRASH_BUTTON_DISABLED = ResourceLocation.fromNamespaceAndPath(Axess.MODID, "textures/gui/delete_button_disabled.png");
 
-    public static ResourceLocation NETWORK_EDITOR_TEX = ResourceLocation.fromNamespaceAndPath(Axess.MODID, "textures/gui/network_editor.png");
+    public static ResourceLocation DRAGGER_TEX = ResourceLocation.fromNamespaceAndPath(Axess.MODID, "textures/gui/dragger.png");
 
     private static final Component NAME_TEXT = Component.translatable("gui."+Axess.MODID+".input.access_level_name");
     private static final Component DELETE_TEXT = Component.translatable("gui."+Axess.MODID+".button.delete");
@@ -96,13 +96,15 @@ public class AccessLevelEntryEditor extends AbstractWidget {
         );
         this.trashButton.setTooltip(Tooltip.create(DELETE_TEXT));
 
-        this.dragButton = new DraggableImageButton(pX, pY, 4, 20, 4, 198, NETWORK_EDITOR_TEX,
+            this.dragButton = new DraggableImageButton(pX, pY, 4, 20, 0, 0, 20, DRAGGER_TEX,
                 btn -> { // PRESS
+                    if (this.list.screen.cantEdit) return;
                     this.dragging = true;
                     this.dragButton.dragging = true;
                     list.startDrag(this);
                 },
                 btn -> { // RELEASE
+                    if (this.list.screen.cantEdit) return;
                     this.dragging = false;
                     this.dragButton.dragging = false;
                 });
@@ -143,6 +145,18 @@ public class AccessLevelEntryEditor extends AbstractWidget {
         dragButton.setBounds(list.leftPos, list.topPos, list.leftPos + list.width, list.topPos + list.height);
         iconButton.setBounds(list.leftPos, list.topPos, list.leftPos + list.width, list.topPos + list.height);
         colorButton.setBounds(list.leftPos, list.topPos, list.leftPos + list.width, list.topPos + list.height);
+
+        if (this.list.screen.cantEdit) {
+            editBox.active = false;
+            trashButton.active = false;
+            fakeTrashButton.active = false;
+            dragButton.active = false;
+            iconButton.active = false;
+            colorButton.active = false;
+
+            this.trashButton.setTooltip(null);
+            this.fakeTrashButton.setTooltip(null);
+        }
     }
 
     public void forceUpdateYPos(int yPos, float partialTick) {
@@ -187,7 +201,7 @@ public class AccessLevelEntryEditor extends AbstractWidget {
     protected void renderWidget(GuiGraphics pGuiGraphics, int pMouseX, int pMouseY, float pPartialTick) {
         boolean shift = Screen.hasShiftDown();
 
-        if (!shift) {
+        if (!shift || this.list.screen.cantEdit) {
             //this.priorityButtonUP.visible = index != 0;
             //this.priorityButtonDOWN.visible = false;
             this.trashButton.visible = false;

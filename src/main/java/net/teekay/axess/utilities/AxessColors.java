@@ -1,5 +1,7 @@
 package net.teekay.axess.utilities;
 
+import org.checkerframework.checker.units.qual.C;
+
 import java.awt.*;
 
 public class AxessColors {
@@ -50,7 +52,6 @@ public class AxessColors {
 
         float v = cmax * 100f;
 
-        //System.out.println(r + " " + g + " " + b + " -> " + h + " " + s + " " + v);
 
         return new HSVColor(h, s, v);
     }
@@ -78,9 +79,17 @@ public class AxessColors {
             default -> throw new IllegalStateException("Unexpected hue sector: " + i);
         }
 
-        //System.out.println(h + " " + s + " " + v + " -> " + r + " " + g + " " + b);
-
         return new Color(r, g, b);
+    }
+
+    public static Color bright(Color a) {
+        HSVColor hsva = toHsv(a);
+        hsva.v = 100f;
+        return toRGB(hsva);
+    }
+
+    public static Color mixColors(Color a, Color b) {
+        return bright(new Color(a.getRed()/2 + b.getRed()/2, a.getGreen()/2 + b.getGreen()/2, a.getBlue()/2 + b.getBlue()/2));
     }
 
 

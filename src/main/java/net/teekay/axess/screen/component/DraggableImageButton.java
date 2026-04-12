@@ -7,8 +7,8 @@ public class DraggableImageButton extends HumbleImageButton {
     OnPress onRelease;
     public boolean dragging = false;
 
-    public DraggableImageButton(int pX, int pY, int pWidth, int pHeight, int pXTexStart, int pYTexStart, ResourceLocation pResourceLocation, OnPress pOnPress, OnPress pOnRelease) {
-        super(pX, pY, pWidth, pHeight, pXTexStart, pYTexStart, pResourceLocation, pOnPress);
+    public DraggableImageButton(int pX, int pY, int pWidth, int pHeight, int pXTexStart, int pYTexStart, int pYDiffTex, ResourceLocation pResourceLocation, OnPress pOnPress, OnPress pOnRelease) {
+        super(pX, pY, pWidth, pHeight, pXTexStart, pYTexStart, pYDiffTex, pResourceLocation, 64, 128, pOnPress);
         this.onRelease = pOnRelease;
     }
 
@@ -26,5 +26,10 @@ public class DraggableImageButton extends HumbleImageButton {
     @Override
     public boolean isHoveredOrFocused() {
         return dragging;
+    }
+
+    @Override
+    public boolean isActive() {
+        return this.active;
     }
 }

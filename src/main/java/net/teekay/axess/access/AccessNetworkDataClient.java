@@ -1,10 +1,6 @@
 package net.teekay.axess.access;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.level.saveddata.SavedData;
-import net.teekay.axess.utilities.AccessUtils;
 
 import java.util.*;
 
@@ -18,7 +14,7 @@ public class AccessNetworkDataClient {
 
     public static List<AccessNetwork> getNetworks() {
         if (Minecraft.getInstance().player != null) {
-            return networkRegistry.values().stream().filter( (network) -> AccessUtils.canPlayerEditNetwork(Minecraft.getInstance().player, network)).toList();
+            return networkRegistry.values().stream().filter((network) -> network.hasPermission(Minecraft.getInstance().player, AccessPermission.VIEW)).toList();
         }
         return networkRegistry.values().stream().toList();
     }

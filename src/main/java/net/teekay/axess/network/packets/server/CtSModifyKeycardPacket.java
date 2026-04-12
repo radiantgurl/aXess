@@ -3,21 +3,19 @@ package net.teekay.axess.network.packets.server;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.network.NetworkEvent;
-import net.teekay.axess.Axess;
 import net.teekay.axess.access.AccessLevel;
 import net.teekay.axess.access.AccessNetwork;
 import net.teekay.axess.access.AccessNetworkDataServer;
+import net.teekay.axess.access.AccessPermission;
 import net.teekay.axess.block.keycardeditor.KeycardEditorBlockEntity;
 import net.teekay.axess.item.keycard.AbstractKeycardItem;
 import net.teekay.axess.network.IAxessPacket;
 import net.teekay.axess.screen.KeycardEditorMenu;
-import net.teekay.axess.utilities.AccessUtils;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -71,11 +69,13 @@ public class CtSModifyKeycardPacket implements IAxessPacket {
                 if (!(stack.getItem() instanceof AbstractKeycardItem keycardItem)) return;
 
                 AccessNetwork prevNetwork = keycardItem.getAccessNetwork(stack, player.level());
-                if (prevNetwork != null) if (!AccessUtils.canPlayerEditNetwork(player, prevNetwork)) return;
+                if (prevNetwork != null) if (!prevNetwork.hasPermission(player, AccessPermission.KEYCARD_ASSIGN)) return;
 
                 AccessNetworkDataServer serverNetworkData = AccessNetworkDataServer.get(player.getServer());
                 AccessNetwork network = serverNetworkData.getNetwork(networkUUID);
                 if (network == null) return;
+
+                if (!network.hasPermission(player, AccessPermission.KEYCARD_ASSIGN)) return;
 
                 AccessLevel accessLevel = network.getAccessLevel(accessLevelUUID);
                 if (accessLevel == null) return;

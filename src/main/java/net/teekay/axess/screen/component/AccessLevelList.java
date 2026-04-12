@@ -4,9 +4,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 import net.teekay.axess.Axess;
 import net.teekay.axess.access.AccessLevel;
-import net.teekay.axess.access.AccessNetwork;
 import net.teekay.axess.utilities.AxessColors;
-import net.teekay.axess.utilities.MathUtil;
+import net.teekay.axess.utilities.MathUtilities;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,8 +53,8 @@ public class AccessLevelList {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         graphics.enableScissor(leftPos, topPos, leftPos+width+scrollerWidth+1, topPos+height);
 
-        int scrollerHeight = MathUtil.calcScrollHeight(height, maxScrollPos);
-        int scrollerPos = MathUtil.calcScrollPos(height, scrollerHeight, scrollPos, maxScrollPos);
+        int scrollerHeight = MathUtilities.calcScrollHeight(height, maxScrollPos);
+        int scrollerPos = MathUtilities.calcScrollPos(height, scrollerHeight, scrollPos, maxScrollPos);
 
         graphics.fill(leftPos+width+1, topPos+scrollerPos, leftPos+width+1+scrollerWidth, topPos+scrollerPos+scrollerHeight, AxessColors.MAIN.getRGB());
 

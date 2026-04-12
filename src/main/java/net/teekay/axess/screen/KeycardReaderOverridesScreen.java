@@ -1,6 +1,6 @@
 package net.teekay.axess.screen;
 
-import com.ibm.icu.impl.Pair;
+import com.mojang.datafixers.util.Pair;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
@@ -79,14 +79,14 @@ public class KeycardReaderOverridesScreen extends Screen {
 
                         for (Pair<AccessNetwork, AccessLevel> existingPair :
                          pairs){
-                            if (pair.first.getUUID() == existingPair.first.getUUID() && pair.second.getUUID() == existingPair.second.getUUID()) {
+                            if (pair.getFirst().getUUID() == existingPair.getFirst().getUUID() && pair.getSecond().getUUID() == existingPair.getSecond().getUUID()) {
                                 return;
                             }
                         }
 
                         pairs.add(pair);
                         NetworkAndLevelEntry newBtn = this.pairList.addElement(pair, true);
-                        addRenderableWidget(newBtn.button);
+                        addWidget(newBtn.button);
                         addWidget(newBtn.trashButton);
                     });
                 }

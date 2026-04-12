@@ -12,6 +12,7 @@ import net.teekay.axess.AxessConfig;
 import net.teekay.axess.access.AccessLevel;
 import net.teekay.axess.access.AccessNetwork;
 import net.teekay.axess.access.AccessNetworkDataClient;
+import net.teekay.axess.access.AccessPermission;
 import net.teekay.axess.client.AxessClientMenus;
 import net.teekay.axess.network.AxessPacketHandler;
 import net.teekay.axess.network.packets.server.CtSModifyNetworkPacket;
@@ -30,11 +31,14 @@ public class NetworkEditorScreen extends Screen {
     private static final Component NETWORK_NAME_LABEL = Component.translatable("gui."+Axess.MODID+".input.network_name");
     private static final Component LEVELS_LABEL = Component.translatable("gui."  + Axess.MODID + ".network_editor.access_levels");
     private static final Component HELP_LABEL = Component.translatable("gui."+Axess.MODID+".help.network_editor");
+    private static final Component PERMISSIONS_LABEL = Component.translatable("gui."+Axess.MODID+".manage_permissions");
 
     private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(Axess.MODID, "textures/gui/network_editor.png");
     private static final ResourceLocation ADD_TEXTURE = ResourceLocation.fromNamespaceAndPath(Axess.MODID, "textures/gui/create_button.png");
     private static final ResourceLocation CONFIRM_BUTTON_TEXTURE = ResourceLocation.fromNamespaceAndPath(Axess.MODID, "textures/gui/confirm_button.png");
     private static final ResourceLocation CANCEL_BUTTON_TEXTURE = ResourceLocation.fromNamespaceAndPath(Axess.MODID, "textures/gui/back_button.png");
+    private static final ResourceLocation PLAYER_PERMISSION_BUTTON_TEXTURE = ResourceLocation.fromNamespaceAndPath(Axess.MODID, "textures/gui/player_permission_button.png");
+
 
     public final int imageWidth, imageHeight;
 
@@ -43,11 +47,14 @@ public class NetworkEditorScreen extends Screen {
     public final AccessNetwork network;
 
     // UI Elements
+    private HumbleImageButton permissionButton;
     private HumbleImageButton addButton;
     private AccessLevelListEditor accessLevelListEditor;
     private HumbleImageButton doneButton;
     private HumbleImageButton cancelButton;
     private EditBox nameEdit;
+
+    public boolean cantEdit = false;
 
     public Consumer<AbstractWidget> childrenAdder = this::addWidget;
     public Consumer<AbstractWidget> childrenRemover = this::addWidget;
@@ -71,6 +78,8 @@ public class NetworkEditorScreen extends Screen {
         if (this.minecraft == null) return;
         ClientLevel level = this.minecraft.level;
         if (level == null) return;
+
+        if (!network.hasPermission(Minecraft.getInstance().player, AccessPermission.AL_EDIT)) {cantEdit = true;}
 
         addRenderableWidget(new HelpButton(leftPos, topPos, imageWidth, imageHeight, HELP_LABEL));
 
@@ -147,12 +156,38 @@ public class NetworkEditorScreen extends Screen {
                 }
         );
 
+        HumbleImageButton permissionButton = new HumbleImageButton(
+                this.leftPos + 218 - 20 - 3,
+                this.topPos + 26,
+                20, 20,
+                0, 0,
+                20,
+                PLAYER_PERMISSION_BUTTON_TEXTURE,
+                32, 96,
+                btn -> {
+                    AxessClientMenus.openPlayerPermissionEditor(network.getPermissions());
+                }
+        );
+
         addButton.setTooltip(Tooltip.create(ADD_BUTTON_LABEL));
 
+        permissionButton.setTooltip(Tooltip.create(PERMISSIONS_LABEL));
+
         this.addButton = addRenderableWidget(addButton);
+        this.permissionButton = addRenderableWidget(permissionButton);
+
+        if (!network.hasPermission(Minecraft.getInstance().player, AccessPermission.ADMIN)) {
+            this.permissionButton.active = false;
+        }
 
         for (AccessLevel accessLevel : this.network.getAccessLevels()) {
             this.accessLevelListEditor.addElement(accessLevel);
+        }
+
+        if (cantEdit) {
+            this.addButton.active = false;
+            this.nameEdit.active = false;
+            this.doneButton.active = false;
         }
     }
 
@@ -174,7 +209,8 @@ public class NetworkEditorScreen extends Screen {
         int accessLevelCount = this.accessLevelListEditor.getSize();
         int accessLevelMaxCount = getMinecraft().player != null ? AxessConfig.getPlayerMaxLevelsPerNetwork(getMinecraft().player) : 0;
 
-        this.addButton.active = accessLevelCount < accessLevelMaxCount;
+        if (!cantEdit)
+            this.addButton.active = accessLevelCount < accessLevelMaxCount;
 
         String countLabel = accessLevelCount + "/" + accessLevelMaxCount + " " + LEVELS_LABEL.getString();
 

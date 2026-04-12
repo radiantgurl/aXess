@@ -9,10 +9,7 @@ import net.teekay.axess.Axess;
 import net.teekay.axess.access.AccessLevel;
 import net.teekay.axess.access.AccessNetwork;
 import net.teekay.axess.client.AxessClientMenus;
-import net.teekay.axess.screen.component.AccessLevelEntry;
-import net.teekay.axess.screen.component.AccessLevelList;
-import net.teekay.axess.screen.component.NetworkEntry;
-import net.teekay.axess.screen.component.NetworkList;
+import net.teekay.axess.screen.component.*;
 import net.teekay.axess.utilities.AxessColors;
 
 import java.util.function.Consumer;
@@ -22,7 +19,7 @@ public class AccessLevelSelectionScreen extends Screen {
     private static final Component TITLE_LABEL = Component.translatable("gui."+Axess.MODID+".access_level_selection_screen");
 
     private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(Axess.MODID, "textures/gui/network_selection_screen.png");
-
+    private static final ResourceLocation BACK_TEXTURE = ResourceLocation.fromNamespaceAndPath(Axess.MODID, "textures/gui/back_button.png");
 
     private final int imageWidth, imageHeight;
 
@@ -66,6 +63,21 @@ public class AccessLevelSelectionScreen extends Screen {
             AccessLevelEntry btn = this.levelList.addElement(aclevel);
             addWidget(btn.button);
         }
+
+        addRenderableWidget(new HumbleImageButton(
+                this.leftPos + 179,
+                this.topPos + 2,
+                20,
+                20,
+                0,
+                0,
+                20,
+                BACK_TEXTURE,
+                32, 64,
+                btn -> {
+                    AxessClientMenus.popGuiLayer();
+                }
+        ));
     }
 
     @Override

@@ -13,9 +13,11 @@ import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.RegistryObject;
+import net.teekay.axess.network.AxessPacketHandler;
 import net.teekay.axess.registry.*;
 import org.slf4j.Logger;
 import org.slf4j.MDC;
@@ -63,12 +65,18 @@ public class Axess {
 
         MinecraftForge.EVENT_BUS.register(this);
 
+        modEventBus.addListener(this::commonSetup);
+
         context.registerConfig(ModConfig.Type.COMMON, AxessConfig.SPEC);
     }
 
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
         LOGGER.info("[aXess] I'm alive!");
+    }
+
+    private void commonSetup(final FMLCommonSetupEvent event) {
+        AxessPacketHandler.register();
     }
 
 }

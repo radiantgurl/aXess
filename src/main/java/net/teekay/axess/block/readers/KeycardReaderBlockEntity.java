@@ -1,6 +1,6 @@
 package net.teekay.axess.block.readers;
 
-import com.ibm.icu.impl.Pair;
+import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -17,12 +17,19 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.teekay.axess.Axess;
+import net.teekay.axess.AxessConfig;
 import net.teekay.axess.access.*;
-import net.teekay.axess.block.IPairableBlockEntity;
+import net.teekay.axess.block.link.BlockLink;
+import net.teekay.axess.block.link.ILinkableBlockEntity;
+import net.teekay.axess.block.link.LinkingSystem;
+import net.teekay.axess.block.link.payload.AbstractLinkPayload;
+import net.teekay.axess.block.link.payload.ReaderPropertiesLinkPayload;
+import net.teekay.axess.block.link.payload.ReaderUpdateLinkPayload;
 import net.teekay.axess.block.receiver.ReceiverBlockEntity;
 import net.teekay.axess.registry.AxessIconRegistry;
 import net.teekay.axess.screen.KeycardReaderMenu;
-import net.teekay.axess.utilities.AccessUtils;
+import net.teekay.axess.utilities.AxessColors;
+import net.teekay.axess.utilities.AxessUtilities;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;
@@ -30,7 +37,7 @@ import java.util.ArrayList;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-public class KeycardReaderBlockEntity extends BlockEntity implements MenuProvider, IPairableBlockEntity {
+public class KeycardReaderBlockEntity extends BlockEntity implements MenuProvider, ILinkableBlockEntity {
 
     private UUID networkID = null;
     private ArrayList<UUID> accessLevelIDs = new ArrayList<>();
@@ -39,18 +46,11 @@ public class KeycardReaderBlockEntity extends BlockEntity implements MenuProvide
     private AccessActivationMode activationMode = AccessActivationMode.TOGGLE;
     private int pulseDurationTicks = 30;
 
+    private ArrayList<BlockLink> blockLinks = new ArrayList<>();
+
     private boolean overrideDisplay = false;
     private AxessIconRegistry.AxessIcon overrideIcon = AxessIconRegistry.NONE;
     private Color overrideColor = Color.WHITE;
-
-    private BlockPos reader_pairPos = null;
-    private UUID reader_pairID = null;
-
-    private BlockPos receiver_pairPos = null;
-    private UUID receiver_pairID = null;
-
-    private BlockPos display_pairPos = null;
-    private UUID display_pairID = null;
 
     public static final String ACCESS_LEVELS_KEY = "AccessLevels";
     public static final String OVERRIDE_ACCESS_LEVELS_KEY = "OverrideAccessLevels";
@@ -59,18 +59,11 @@ public class KeycardReaderBlockEntity extends BlockEntity implements MenuProvide
     public static final String ACTIVATION_MODE_KEY  = "ActivationMode";
     public static final String PULSE_DURATION_TICKS_KEY  = "PulseDurationTicks";
 
-    public static final String READER_PAIR_POS_KEY = "ReaderPairPos";
-    public static final String READER_PAIR_ID_KEY = "ReaderPairID";
-
-    public static final String RECEIVER_PAIR_POS_KEY = "ReceiverPairPos";
-    public static final String RECEIVER_PAIR_ID_KEY = "ReceiverPairID";
-
-    public static final String DISPLAY_PAIR_POS_KEY = "DisplayPairPos";
-    public static final String DISPLAY_PAIR_ID_KEY = "DisplayPairID";
-
     public static final String OVERRIDE_DISPLAY_KEY = "OverrideDisplay";
     public static final String OVERRIDE_ICON_KEY = "OverrideIcon";
     public static final String OVERRIDE_COLOR_KEY = "OverrideColor";
+
+    public static final String BLOCKLINK_KEY = "BlockLinks";
 
     public KeycardReaderBlockEntity(BlockEntityType<?> type, BlockPos pPos, BlockState pBlockState) {
         super(type, pPos, pBlockState);
@@ -100,52 +93,56 @@ public class KeycardReaderBlockEntity extends BlockEntity implements MenuProvide
             case PULSE -> {
                 if (!getPowered()) {
                     activate();
-                    execOnReaderPair(KeycardReaderBlockEntity::activate);
                 }
             }
 
             case TOGGLE -> {
                 if (!getPowered()) {
                     activate();
-                    execOnReaderPair(KeycardReaderBlockEntity::activate);
                 } else {
                     deactivate();
-                    execOnReaderPair(KeycardReaderBlockEntity::deactivate);
                 }
             }
         }
     }
 
+    public void updateOthers() {
+        LinkingSystem.emitPayloadToConnections(this,
+                new ReaderPropertiesLinkPayload(this, compareMode, activationMode, pulseDurationTicks)
+        );
+    }
+
     public void activate() {
+        _activate();
+        LinkingSystem.emitPayloadToConnections(
+                this,
+                new ReaderUpdateLinkPayload(this, true)
+        );
+    }
+
+    public void deactivate() {
+        _deactivate();
+        LinkingSystem.emitPayloadToConnections(
+                this,
+                new ReaderUpdateLinkPayload(this, false)
+        );
+    }
+
+    private void _activate() {
         level.setBlock(getBlockPos(), setPowered(true), 3);
         level.updateNeighborsAt(getBlockPos(), getBlockState().getBlock());
         level.updateNeighborsAt(getBlockPos().relative(getConnectedDirection().getOpposite()), getBlockState().getBlock());
 
         if (activationMode == AccessActivationMode.PULSE)
             level.scheduleTick(getBlockPos(), getBlockState().getBlock(), pulseDurationTicks);
-
-        execOnReceiverPair(ReceiverBlockEntity::activate);
     }
 
-    public void deactivate() {
+    private void _deactivate() {
         level.setBlock(getBlockPos(), getBlockState().setValue(AbstractKeycardReaderBlock.POWERED, false), 3);
         level.updateNeighborsAt(getBlockPos(), getBlockState().getBlock());
         level.updateNeighborsAt(getBlockPos().relative(getConnectedDirection().getOpposite()), getBlockState().getBlock());
-
-        execOnReceiverPair(ReceiverBlockEntity::deactivate);
     }
 
-    public void execOnReaderPair(Consumer<KeycardReaderBlockEntity> exec) {
-        KeycardReaderBlockEntity pair = getReaderPair();
-
-        if (pair != null) exec.accept(pair);
-    }
-
-    public void execOnReceiverPair(Consumer<ReceiverBlockEntity> exec) {
-        ReceiverBlockEntity pair = getReceiverPair();
-
-        if (pair != null) exec.accept(pair);
-    }
 
     @Override
     public void setChanged() {
@@ -157,7 +154,7 @@ public class KeycardReaderBlockEntity extends BlockEntity implements MenuProvide
 
     @Nullable
     public AccessNetwork getAccessNetwork() {
-        return AccessUtils.getAccessNetworkFromID(networkID, level);
+        return AxessUtilities.getAccessNetworkFromID(networkID, level);
     }
 
     @Nullable
@@ -180,10 +177,10 @@ public class KeycardReaderBlockEntity extends BlockEntity implements MenuProvide
         ArrayList<Pair<AccessNetwork, AccessLevel>> oLevels = new ArrayList<>();
 
         for (Pair<UUID, UUID> pair : overrideAccessLevelsIDs) {
-            AccessNetwork net = AccessUtils.getAccessNetworkFromID(pair.first, level);
+            AccessNetwork net = AxessUtilities.getAccessNetworkFromID(pair.getFirst(), level);
             if (net == null) continue;
 
-            AccessLevel level = net.getAccessLevel(pair.second);
+            AccessLevel level = net.getAccessLevel(pair.getSecond());
             if (level == null)  continue;
 
             oLevels.add(Pair.of(net, level));
@@ -202,107 +199,67 @@ public class KeycardReaderBlockEntity extends BlockEntity implements MenuProvide
         return pulseDurationTicks;
     }
 
-    public KeycardReaderBlockEntity getReaderPair() {
-        if (level == null) return null;
-        if (reader_pairPos == null) return null;
-        if (reader_pairID == null) return null;
-
-        if (level.getBlockEntity(reader_pairPos) instanceof KeycardReaderBlockEntity e) {
-            if (reader_pairID.equals(e.getReaderPairID())) return e;
-
-            reader_pairPos = null;
-            reader_pairID = null;
-            setChanged();
-        }
-        return null;
-    }
-
-    public ReceiverBlockEntity getReceiverPair() {
-        if (level == null) return null;
-        if (receiver_pairPos == null) return null;
-        if (receiver_pairID == null) return null;
-
-        if (level.getBlockEntity(receiver_pairPos) instanceof ReceiverBlockEntity e) {
-            if (receiver_pairID.equals(e.getReaderPairID())) return e;
-
-            receiver_pairID = null;
-            receiver_pairPos = null;
-            setChanged();
-        }
-        return null;
-    }
-
-    public BlockPos getReaderPairPos() {
-        return reader_pairPos;
-    }
-    public UUID getReaderPairID() {
-        return reader_pairID;
-    }
-
-    public BlockPos getReceiverPairPos() {
-        return reader_pairPos;
-    }
-    public UUID getReceiverPairID() {
-        return receiver_pairID;
-    }
-
-    public void setReceiverPairPos(BlockPos pairPos) {
-        this.receiver_pairPos = pairPos;
-    }
-    public void setReceiverPairID(UUID pairID) {
-        this.receiver_pairID = pairID;
-    }
-
-    public void setReaderPairPos(BlockPos pairPos) {
-        this.reader_pairPos = pairPos;
-    }
-    public void setReaderPairID(UUID pairID) {
-        this.reader_pairID = pairID;
+    @Override
+    public BlockEntity getBlockEntity() {
+        return this;
     }
 
     @Override
-    public boolean canPairWith(BlockEntity be) {
+    public Color getLinkingColor() {
+        return AxessColors.MAIN;
+    }
+
+    @Override
+    public ArrayList<BlockLink> getLinks() {
+        return blockLinks;
+    }
+
+    @Override
+    public boolean canLink() {
+        return blockLinks.size() < AxessConfig.maxLinksReader;
+    }
+
+    @Override
+    public boolean canLinkWith(BlockEntity be) {
         return be instanceof KeycardReaderBlockEntity || be instanceof ReceiverBlockEntity;
     }
 
     @Override
-    public boolean canBePairedBy(Player player) {
-        return AccessUtils.canPlayerEditNetwork(player, getAccessNetwork());
+    public boolean canBeLinkedBy(Player player) {
+        if (getAccessNetwork() == null) return false;
+        return getAccessNetwork().hasPermission(player, AccessPermission.READER_LINK);
     }
 
     @Override
-    public void handlePairing(BlockEntity be) {
-        if (be instanceof KeycardReaderBlockEntity otherReader) {
-            setReaderPairPos(otherReader.getBlockPos());
-            otherReader.setReaderPairPos(getBlockPos());
-            UUID pairID = UUID.randomUUID();
-            setReaderPairID(pairID);
-            otherReader.setReaderPairID(pairID);
+    public void onLinkWith(BlockEntity be, boolean first) {
+        if (!first) return;
+        LinkingSystem.emitPayloadToConnections(
+                this,
+                new ReaderPropertiesLinkPayload(
+                        this, compareMode, activationMode, pulseDurationTicks
+                )
+        );
+    }
 
-            otherReader.setActivationMode(activationMode);
-
+    @Override
+    public void acceptPayload(AbstractLinkPayload payload) {
+        if (payload instanceof ReaderPropertiesLinkPayload rpPayload) {
+            setActivationMode(rpPayload.getActivationMode());
+            setCompareMode(rpPayload.getCompareMode());
+            setPulseDurationTicks(rpPayload.getPulseDurationTicks());
             setChanged();
-            otherReader.setChanged();
-        } else if (be instanceof ReceiverBlockEntity receiver) {
-            receiver.setReaderPairPos(getBlockPos());
-            setReceiverPairPos(receiver.getBlockPos());
-
-            UUID pairID = UUID.randomUUID();
-            receiver.setReaderPairID(pairID);
-            setReceiverPairID(pairID);
-
-            receiver.setChanged();
-            setChanged();
+        } else if (payload instanceof ReaderUpdateLinkPayload ruPayload) {
+            if (ruPayload.getNewState()) {
+                _activate();
+            } else {
+                _deactivate();
+            }
         }
     }
 
     @Override
-    public void clearPairings() {
-        receiver_pairPos = null;
-        receiver_pairID = null;
-        reader_pairID = null;
-        reader_pairPos = null;
-        setChanged();
+    public void onClearLinks() {
+        //_deactivate();
     }
 
     public void setAccessNetwork(AccessNetwork network) {
@@ -329,7 +286,7 @@ public class KeycardReaderBlockEntity extends BlockEntity implements MenuProvide
 
         for (Pair<AccessNetwork, AccessLevel> levelPair :
                 levels) {
-            overrideAccessLevelsIDs.add(Pair.of(levelPair.first.getUUID(), levelPair.second.getUUID()));
+            overrideAccessLevelsIDs.add(Pair.of(levelPair.getFirst().getUUID(), levelPair.getSecond().getUUID()));
         }
     }
 
@@ -392,8 +349,8 @@ public class KeycardReaderBlockEntity extends BlockEntity implements MenuProvide
         for (Pair<UUID, UUID> p :
                 overrideAccessLevelsIDs) {
             CompoundTag x = new CompoundTag();
-            x.putUUID("NetworkUUID", p.first);
-            x.putUUID("LevelUUID", p.second);
+            x.putUUID("NetworkUUID", p.getFirst());
+            x.putUUID("LevelUUID", p.getSecond());
             accessLevelsTag.add(x);
         }
 
@@ -404,14 +361,13 @@ public class KeycardReaderBlockEntity extends BlockEntity implements MenuProvide
         modTag.putString(ACTIVATION_MODE_KEY, activationMode.toString());
         modTag.putInt(PULSE_DURATION_TICKS_KEY, pulseDurationTicks);
 
-        if (reader_pairPos != null) modTag.putLong(READER_PAIR_POS_KEY, reader_pairPos.asLong());
-        if (reader_pairID != null) modTag.putUUID(READER_PAIR_ID_KEY, reader_pairID);
+        ListTag blList = new ListTag();
+        for (BlockLink link :
+                blockLinks) {
+            blList.add(link.toNBT());
+        }
 
-        if (receiver_pairPos != null) modTag.putLong(RECEIVER_PAIR_POS_KEY, receiver_pairPos.asLong());
-        if (receiver_pairID != null) modTag.putUUID(RECEIVER_PAIR_ID_KEY, receiver_pairID);
-
-        if (display_pairPos != null) modTag.putLong(DISPLAY_PAIR_POS_KEY, display_pairPos.asLong());
-        if (display_pairID != null) modTag.putUUID(DISPLAY_PAIR_ID_KEY, display_pairID);
+        modTag.put(BLOCKLINK_KEY, blList);
 
         modTag.putBoolean(OVERRIDE_DISPLAY_KEY, overrideDisplay);
         modTag.putString(OVERRIDE_ICON_KEY, overrideIcon.ID);
@@ -452,30 +408,15 @@ public class KeycardReaderBlockEntity extends BlockEntity implements MenuProvide
         activationMode = AccessActivationMode.valueOf(modTag.getString(ACTIVATION_MODE_KEY));
         pulseDurationTicks = modTag.getInt(PULSE_DURATION_TICKS_KEY);
 
-        reader_pairID = null;
-        reader_pairPos = null;
-        receiver_pairID = null;
-        receiver_pairPos = null;
-        display_pairID = null;
-        display_pairPos = null;
+        if (modTag.contains(BLOCKLINK_KEY)) {
+            ListTag blList = (ListTag) modTag.get(BLOCKLINK_KEY);
+            blockLinks.clear();
 
-        long longReaderPairPos = modTag.getLong(READER_PAIR_POS_KEY);
-        if (longReaderPairPos != 0L)
-            reader_pairPos = BlockPos.of(longReaderPairPos);
-        if (modTag.contains(READER_PAIR_ID_KEY))
-            reader_pairID = modTag.getUUID(READER_PAIR_ID_KEY);
+            if (blList != null) for (int i = 0; i < blList.size(); i++) {
+                blockLinks.add(BlockLink.fromNBT((CompoundTag) blList.getCompound(i)));
+            }
+        }
 
-        long longReceiverPairPos = modTag.getLong(RECEIVER_PAIR_POS_KEY);
-        if (longReceiverPairPos != 0L)
-            receiver_pairPos = BlockPos.of(longReceiverPairPos);
-        if (modTag.contains(RECEIVER_PAIR_ID_KEY))
-            receiver_pairID = modTag.getUUID(RECEIVER_PAIR_ID_KEY);
-
-        long longDisplayPairPos = modTag.getLong(DISPLAY_PAIR_POS_KEY);
-        if (longDisplayPairPos != 0L)
-            display_pairPos = BlockPos.of(longDisplayPairPos);
-        if (modTag.contains(DISPLAY_PAIR_ID_KEY))
-            display_pairID = modTag.getUUID(DISPLAY_PAIR_ID_KEY);
 
         if (modTag.contains(OVERRIDE_DISPLAY_KEY))
             overrideDisplay = modTag.getBoolean(OVERRIDE_DISPLAY_KEY);

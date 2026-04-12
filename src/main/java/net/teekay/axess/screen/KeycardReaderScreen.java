@@ -1,6 +1,6 @@
 package net.teekay.axess.screen;
 
-import com.ibm.icu.impl.Pair;
+import com.mojang.datafixers.util.Pair;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -19,9 +19,8 @@ import net.teekay.axess.network.AxessPacketHandler;
 import net.teekay.axess.network.packets.server.CtSModifyKeycardReaderPacket;
 import net.teekay.axess.registry.AxessIconRegistry;
 import net.teekay.axess.screen.component.*;
-import net.teekay.axess.utilities.AccessUtils;
 import net.teekay.axess.utilities.AxessColors;
-import net.teekay.axess.utilities.MathUtil;
+import net.teekay.axess.utilities.MathUtilities;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -163,7 +162,7 @@ public class KeycardReaderScreen extends AbstractContainerScreen<KeycardReaderMe
                         PULSE_DURATION_LABEL_PREFIX,
                         PULSE_DURATION_LABEL_SUFFIX,
                         2, 100,
-                        this.selectedPulseDurationTicks, 1,
+                        this.selectedPulseDurationTicks, 2,
                         0, true
                 )
         );
@@ -211,7 +210,7 @@ public class KeycardReaderScreen extends AbstractContainerScreen<KeycardReaderMe
                         0,
                         20,
                         LIST_BUTTON_TEXTURE,
-                        32, 64,
+                        32, 128,
                         btn -> {
                             AxessClientMenus.openKeycardOverridesScreen(selectedOverrideLevels);
                         })
@@ -219,6 +218,10 @@ public class KeycardReaderScreen extends AbstractContainerScreen<KeycardReaderMe
         this.overridesButton.setTooltip(Tooltip.create(OVERRIDES_LABEL));
 
         updateEntries();
+
+        if (this.selectedNetwork != null && !this.selectedNetwork.hasPermission(Minecraft.getInstance().player, AccessPermission.READER_OVERRIDES)) {
+            this.overridesButton.active = false;
+        }
     }
 
     @Override
@@ -238,8 +241,8 @@ public class KeycardReaderScreen extends AbstractContainerScreen<KeycardReaderMe
 
         renderBackground(pGuiGraphics);
 
-        scrollPosLevels   = MathUtil.clampInt(scrollPosLevels,   0, scrollMaxLevels  );
-        scrollPosNetworks = MathUtil.clampInt(scrollPosNetworks, 0, scrollMaxNetworks);
+        scrollPosLevels   = MathUtilities.clampInt(scrollPosLevels,   0, scrollMaxLevels  );
+        scrollPosNetworks = MathUtilities.clampInt(scrollPosNetworks, 0, scrollMaxNetworks);
 
         super.render(pGuiGraphics, pMouseX, pMouseY, pPartialTick);
 
@@ -253,8 +256,8 @@ public class KeycardReaderScreen extends AbstractContainerScreen<KeycardReaderMe
         }
         pGuiGraphics.disableScissor();
 
-        int netScrollerHeight = MathUtil.calcScrollHeight(NETWORKS_HEIGHT, scrollMaxNetworks);
-        int netScrollerPos = MathUtil.calcScrollPos(NETWORKS_HEIGHT, netScrollerHeight, scrollPosNetworks, scrollMaxNetworks);
+        int netScrollerHeight = MathUtilities.calcScrollHeight(NETWORKS_HEIGHT, scrollMaxNetworks);
+        int netScrollerPos = MathUtilities.calcScrollPos(NETWORKS_HEIGHT, netScrollerHeight, scrollPosNetworks, scrollMaxNetworks);
         pGuiGraphics.fill(
                 leftPos+NETWORKS_X+NETWORKS_WIDTH+1,
                 topPos+NETWORKS_Y+netScrollerPos,
@@ -270,8 +273,8 @@ public class KeycardReaderScreen extends AbstractContainerScreen<KeycardReaderMe
         }
         pGuiGraphics.disableScissor();
 
-        int lvlScrollerHeight = MathUtil.calcScrollHeight(LEVELS_HEIGHT, scrollMaxLevels);
-        int lvlScrollerPos = MathUtil.calcScrollPos(LEVELS_HEIGHT, lvlScrollerHeight, scrollPosLevels, scrollMaxLevels);
+        int lvlScrollerHeight = MathUtilities.calcScrollHeight(LEVELS_HEIGHT, scrollMaxLevels);
+        int lvlScrollerPos = MathUtilities.calcScrollPos(LEVELS_HEIGHT, lvlScrollerHeight, scrollPosLevels, scrollMaxLevels);
         pGuiGraphics.fill(
                 leftPos+LEVELS_X+LEVELS_WIDTH+1,
                 topPos+LEVELS_Y+lvlScrollerPos,
@@ -315,7 +318,7 @@ public class KeycardReaderScreen extends AbstractContainerScreen<KeycardReaderMe
 
                     for (Pair<AccessNetwork, AccessLevel> otherPair :
                             beforePairs) {
-                        if (pair.first.getUUID() == otherPair.first.getUUID() && pair.second.getUUID() == otherPair.second.getUUID()) {
+                        if (pair.getFirst().getUUID() == otherPair.getFirst().getUUID() && pair.getSecond().getUUID() == otherPair.getSecond().getUUID()) {
                             found = true;
                             break;
                         }
@@ -362,6 +365,8 @@ public class KeycardReaderScreen extends AbstractContainerScreen<KeycardReaderMe
         selectedNetwork = network;
         selectedLevels.clear();
         updateLevelEntries();
+
+        this.overridesButton.active = network.hasPermission(Minecraft.getInstance().player, AccessPermission.READER_OVERRIDES);
     }
 
     public void toggleLevel(AccessLevel level) {
@@ -408,6 +413,7 @@ public class KeycardReaderScreen extends AbstractContainerScreen<KeycardReaderMe
 
         List<AccessNetwork> networks = AccessNetworkDataClient.getNetworks();
         for (int index = 0; index < networks.size(); index++) {
+            if (!networks.get(index).hasPermission(Minecraft.getInstance().player, AccessPermission.READER_EDIT)) continue;
             SelectableNetworkEntry entry = new SelectableNetworkEntry(networks.get(index), index);
             networkEntries.add(entry);
             addWidget(entry);
@@ -421,7 +427,7 @@ public class KeycardReaderScreen extends AbstractContainerScreen<KeycardReaderMe
         selectedNetwork = menu.blockEntity.getAccessNetwork();
         selectedLevels = menu.blockEntity.getAccessLevels();
 
-        if (selectedNetwork == null || AccessUtils.canPlayerEditNetwork(Minecraft.getInstance().player, selectedNetwork)) {
+        if (selectedNetwork == null || selectedNetwork.hasPermission(Minecraft.getInstance().player, AccessPermission.READER_EDIT)) {
             updateNetworkEntries();
             updateLevelEntries();
         } else {
@@ -506,6 +512,18 @@ public class KeycardReaderScreen extends AbstractContainerScreen<KeycardReaderMe
             if (selectedNetwork == this.network) return ButtonColor.GREEN;
             return super.getColor();
         }
+    }
+
+    @Override
+    public boolean mouseDragged(double pMouseX, double pMouseY, int pButton, double pDragX, double pDragY) {
+        return this.getFocused() != null && this.isDragging() && pButton == 0 && this.getFocused().mouseDragged(pMouseX, pMouseY, pButton, pDragX, pDragY);
+    }
+
+    @Override
+    public boolean mouseReleased(double pMouseX, double pMouseY, int pButton) {
+        this.setFocused(false);
+        this.setFocused(null);
+        return super.mouseReleased(pMouseX, pMouseY, pButton);
     }
 
     private class SelectableLevelEntry extends TexturedButton {

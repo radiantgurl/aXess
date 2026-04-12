@@ -2,28 +2,30 @@ package net.teekay.axess.block.receiver;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.teekay.axess.Axess;
-import net.teekay.axess.block.IPairableBlockEntity;
+import net.teekay.axess.block.link.BlockLink;
+import net.teekay.axess.block.link.ILinkableBlockEntity;
+import net.teekay.axess.block.link.LinkingSystem;
+import net.teekay.axess.block.link.payload.AbstractLinkPayload;
+import net.teekay.axess.block.link.payload.ReaderUpdateLinkPayload;
 import net.teekay.axess.block.readers.AbstractKeycardReaderBlock;
-import net.teekay.axess.block.readers.KeycardReaderBlock;
 import net.teekay.axess.block.readers.KeycardReaderBlockEntity;
 import net.teekay.axess.registry.AxessBlockEntityRegistry;
+import net.teekay.axess.utilities.AxessColors;
 
+import java.awt.*;
+import java.util.ArrayList;
 import java.util.UUID;
 
-public class ReceiverBlockEntity extends BlockEntity implements IPairableBlockEntity {
+public class ReceiverBlockEntity extends BlockEntity implements ILinkableBlockEntity {
 
-
-    private BlockPos reader_pairPos = null;
-    private UUID reader_pairID = null;
-
-    public static final String READER_PAIR_POS_KEY = "ReaderPairPos";
-    public static final String READER_PAIR_ID_KEY = "ReaderPairID";
+    private ArrayList<BlockLink> blockLinks = new ArrayList<>();
 
     public ReceiverBlockEntity(BlockPos pPos, BlockState pBlockState) {
         super(AxessBlockEntityRegistry.RECEIVER.get(), pPos, pBlockState);
@@ -40,54 +42,72 @@ public class ReceiverBlockEntity extends BlockEntity implements IPairableBlockEn
     public void activate() {
         level.setBlock(getBlockPos(), setPowered(true), 3);
         level.updateNeighborsAt(getBlockPos(), getBlockState().getBlock());
+        level.updateNeighborsAt(getBlockPos().relative(getBlockState().getValue(ReceiverBlock.FACING).getOpposite()), getBlockState().getBlock());
     }
 
     public void deactivate() {
-        level.setBlock(getBlockPos(), getBlockState().setValue(AbstractKeycardReaderBlock.POWERED, false), 3);
+        level.setBlock(getBlockPos(), setPowered(false), 3);
         level.updateNeighborsAt(getBlockPos(), getBlockState().getBlock());
-    }
-
-    public KeycardReaderBlockEntity getReaderPair() {
-        if (level == null) return null;
-        if (reader_pairPos == null) return null;
-        if (reader_pairID == null) return null;
-
-        if (level.getBlockEntity(reader_pairPos) instanceof KeycardReaderBlockEntity e) {
-            if (reader_pairID.equals(e.getReceiverPairID())) return e;
-
-            reader_pairPos = null;
-            reader_pairID = null;
-            setChanged();
-        }
-        return null;
+        level.updateNeighborsAt(getBlockPos().relative(getBlockState().getValue(ReceiverBlock.FACING).getOpposite()), getBlockState().getBlock());
     }
 
     @Override
-    public boolean canPairWith(BlockEntity be) {
+    public BlockEntity getBlockEntity() {
+        return this;
+    }
+
+    @Override
+    public Color getLinkingColor() {
+        return AxessColors.RED;
+    }
+
+    @Override
+    public ArrayList<BlockLink> getLinks() {
+        return blockLinks;
+    }
+
+    @Override
+    public boolean canLink() {
+        return blockLinks.size() < 1;
+    }
+
+    @Override
+    public boolean canLinkWith(BlockEntity be) {
         return be instanceof KeycardReaderBlockEntity;
     }
 
     @Override
-    public boolean canBePairedBy(Player player) {
-        KeycardReaderBlockEntity keycardReader = getReaderPair();
-        if (keycardReader != null) {
-            return keycardReader.canBePairedBy(player);
+    public boolean canBeLinkedBy(Player player) {
+        boolean can = true;
+        for (BlockLink link : blockLinks) {
+            ILinkableBlockEntity lbe = LinkingSystem.getLinkableAtBlockPos(level, link.getOther(getBlockPos()));
+            if (lbe == null) continue;
+            can = can && lbe.canBeLinkedBy(player);
         }
-        return true;
+        return can;
     }
 
     @Override
-    public void handlePairing(BlockEntity be) {
-        if (be instanceof KeycardReaderBlockEntity reader) {
-            reader.handlePairing(this); // pass to other
+    public void onLinkWith(BlockEntity be, boolean first) {
+        if (be instanceof KeycardReaderBlockEntity kr) {
+            if (kr.getPowered()) activate(); else deactivate();
         }
     }
 
     @Override
-    public void clearPairings() {
-        reader_pairID = null;
-        reader_pairPos = null;
-        setChanged();
+    public void onClearLinks() {
+        deactivate();
+    }
+
+    @Override
+    public void acceptPayload(AbstractLinkPayload payload) {
+        if (payload instanceof ReaderUpdateLinkPayload readerUpdateLinkPayload) {
+            if (readerUpdateLinkPayload.getNewState()) {
+                activate();
+            } else {
+                deactivate();
+            }
+        }
     }
 
     @Override
@@ -98,23 +118,17 @@ public class ReceiverBlockEntity extends BlockEntity implements IPairableBlockEn
         super.setChanged();
     }
 
-    public UUID getReaderPairID() {
-        return reader_pairID;
-    }
-
-    public void setReaderPairPos(BlockPos pairPos) {
-        this.reader_pairPos = pairPos;
-    }
-    public void setReaderPairID(UUID pairID) {
-        this.reader_pairID = pairID;
-    }
-
     @Override
     protected void saveAdditional(CompoundTag pTag) {
         CompoundTag modTag = new CompoundTag();
 
-        if (reader_pairPos != null) modTag.putLong(READER_PAIR_POS_KEY, reader_pairPos.asLong());
-        if (reader_pairID != null) modTag.putUUID(READER_PAIR_ID_KEY, reader_pairID);
+        ListTag links = new ListTag();
+        for (BlockLink link :
+                blockLinks) {
+            links.add(link.toNBT());
+        }
+
+        modTag.put("BlockLinks", links);
 
         pTag.put(Axess.MODID, modTag);
 
@@ -125,14 +139,13 @@ public class ReceiverBlockEntity extends BlockEntity implements IPairableBlockEn
     public void load(CompoundTag pTag) {
         CompoundTag modTag = pTag.getCompound(Axess.MODID);
 
-        reader_pairPos = null;
-        reader_pairID = null;
-
-        long longReaderPairPos = modTag.getLong(READER_PAIR_POS_KEY);
-        if (longReaderPairPos != 0L)
-            reader_pairPos = BlockPos.of(longReaderPairPos);
-        if (modTag.contains(READER_PAIR_ID_KEY))
-            reader_pairID = modTag.getUUID(READER_PAIR_ID_KEY);
+        if (modTag.contains("BlockLinks")) {
+            blockLinks.clear();
+            ListTag blList = (ListTag) modTag.get("BlockLinks");
+            if (blList != null) for (int i = 0; i < blList.size(); i++) {
+                blockLinks.add(BlockLink.fromNBT(blList.getCompound(i)));
+            }
+        }
 
         super.load(pTag);
         setChanged();

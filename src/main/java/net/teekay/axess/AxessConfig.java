@@ -27,9 +27,17 @@ public class AxessConfig
             .comment("The maximum amount of access levels a network can have (for server operators).")
             .defineInRange("op_max_levels_per_network", 40, 1, 100);
 
-    private static final ForgeConfigSpec.IntValue MAX_PAIR_DIST = BUILDER
+    private static final ForgeConfigSpec.IntValue MAX_LINK_DIST = BUILDER
             .comment("The maximum distance there can be between two linked devices.")
-            .defineInRange("max_pair_distance", 32, 1, 100);
+            .defineInRange("max_link_distance", 32, 1, 100);
+
+    private static final ForgeConfigSpec.IntValue MAX_LINKS_READER = BUILDER
+            .comment("The maximum amount of links a reader can have.")
+            .defineInRange("max_links_reader", 5, 0, 20);
+
+    private static final ForgeConfigSpec.BooleanValue EXPERIMENTAL_LET_EVERYONE_EDIT_EVERYTHING = BUILDER
+            .comment("[EXPERIMENTAL] ENABLE THIS ONLY IF YOU WANT EVERYONE TO BE ABLE TO EDIT EVERY NETWORK (DANGEROUS)")
+            .define("experimental_let_everyone_edit_everything", false);
 
 
     static final ForgeConfigSpec SPEC = BUILDER.build();
@@ -38,8 +46,9 @@ public class AxessConfig
     private static int maxLevelsPerNetwork;
     private static int opMaxNetworksPerPlayer;
     private static int opMaxLevelsPerNetwork;
-    public static int maxPairDistance;
-
+    public static int maxLinkDistance;
+    public static int maxLinksReader;
+    public static boolean experimentalLetEveryoneEditEverything;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event)
@@ -48,7 +57,9 @@ public class AxessConfig
         maxLevelsPerNetwork = MAX_LEVELS_PER_NETWORK.get();
         opMaxNetworksPerPlayer = OP_MAX_NETWORKS_PER_PLAYER.get();
         opMaxLevelsPerNetwork = OP_MAX_LEVELS_PER_NETWORK.get();
-        maxPairDistance = MAX_PAIR_DIST.get();
+        maxLinkDistance = MAX_LINK_DIST.get();
+        maxLinksReader = MAX_LINKS_READER.get();
+        experimentalLetEveryoneEditEverything = EXPERIMENTAL_LET_EVERYONE_EDIT_EVERYTHING.get();
     }
 
     static void registerConfig(ModLoadingContext ctx) {

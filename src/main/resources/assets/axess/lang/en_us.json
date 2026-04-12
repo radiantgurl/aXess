@@ -6,8 +6,6 @@
   "sounds.axess.keycard_reader_decline": "Keycard declined",
 
   "item.axess.keycard": "Keycard",
-  "item.axess.doohickey_keycard": "Doohickey Corp. Keycard",
-  "item.axess.doohickey_master_keycard": "Master Doohickey Corp. Keycard",
   "item.axess.access_wrench": "Access Wrench",
   "item.axess.linker": "Linker",
 
@@ -18,6 +16,16 @@
   "item.axess.linker.too_far": "Distance too far",
   "item.axess.linker.no_permission": "You don't have permission for this linkable",
   "item.axess.linker.clear_links": "Cleared links",
+
+  "tooltip.axess.more_info": "Press [%s] for more info",
+  "tooltip.axess.lshift": "L-SHIFT",
+  "tooltip.axess.item.keycard": "Use the Keycard Manager to give the keycard a network and access level. To use, right click on a reader",
+  "tooltip.axess.item.linker": "Used to link two blocks together. Examples: Reader with Receiver, Reader with Reader",
+  "tooltip.axess.item.wrench": "Used to edit block properties",
+  "tooltip.axess.block.network_manager": "Create, edit, and delete networks",
+  "tooltip.axess.block.keycard_editor": "Assign networks and access levels to keycards",
+  "tooltip.axess.block.reader": "Used for access control. When powered, powers the block behind it. Right click with wrench to edit",
+  "tooltip.axess.block.receiver": "Link with a reader. Activates when reader is on and powers the block under it",
 
   "block.axess.keycard_reader": "Keycard Reader",
   "block.axess.mini_keycard_reader_left": "Mini Keycard Reader (Left)",
@@ -50,6 +58,7 @@
   "gui.axess.button.change_color": "Change color",
   "gui.axess.button.change_icon": "Change icon",
   "gui.axess.button.add_override": "Add override",
+  "gui.axess.button.add_player": "Add player",
 
   "gui.axess.input.network_name": "Network name",
   "gui.axess.input.access_level_name": "Access level name",
@@ -67,12 +76,16 @@
   "gui.axess.icon_selection_screen": "Icon Selection",
   "gui.axess.color_selection_screen": "Color Selection",
 
+  "gui.axess.network_player_permission": "Player Permissions",
+
   "gui.axess.keycard_editor": "Keycard Editor",
   "gui.axess.keycard_editor.no_keycard": "Insert keycard",
   "gui.axess.keycard_editor.no_network": "Select network",
   "gui.axess.keycard_editor.no_level": "Select level",
   "gui.axess.keycard_editor.apply_changes": "Apply changes",
   "gui.axess.keycard_editor.no_permissions": "You can't edit this keycard",
+  "gui.axess.keycard_editor.network_no_permissions": "You can't edit this keycard",
+
 
   "gui.axess.keycard_reader": "Keycard Reader",
   "gui.axess.keycard_reader.no_network": "Select network",
@@ -81,7 +94,7 @@
   "gui.axess.keycard_reader.pulse_duration": "Duration in ticks for how long the reader should stay active.",
   "gui.axess.keycard_reader.pulse_duration.prefix": "Pulse: ",
   "gui.axess.keycard_reader.pulse_duration.suffix": " Ticks",
-  "gui.axess.keycard_reader.synced": "These properties are synced with the paired reader.",
+  "gui.axess.keycard_reader.synced": "These properties are synced with the linked readers.",
   "gui.axess.keycard_reader.override_display": "Custom icon:",
 
   "gui.axess.compare_mode": "Compare mode: ",
@@ -100,5 +113,31 @@
 
   "gui.axess.access_level_selection_screen": "Select Access Level",
   "gui.axess.network_selection_screen": "Select Network",
-  "gui.axess.keycard_reader_overrides": "Access Overrides"
+  "gui.axess.player_selection_screen": "Select Player",
+  "gui.axess.keycard_reader_overrides": "Access Overrides",
+  "gui.axess.manage_permissions": "Manage permissions",
+  "gui.axess.permission_editor": "%s's permissions",
+
+  "gui.axess.permissions.section.general": "General",
+  "gui.axess.permissions.section.reader": "Readers",
+  "gui.axess.permissions.section.access_level": "Access levels",
+  "gui.axess.permissions.section.keycard": "Keycards",
+
+  "gui.axess.permissions.view": "View",
+  "gui.axess.permissions.reader_edit": "Edit",
+  "gui.axess.permissions.reader_link": "Link",
+  "gui.axess.permissions.reader_overrides": "Edit overrides",
+  "gui.axess.permissions.al_edit": "Edit",
+  "gui.axess.permissions.keycard_assign": "Create",
+
+  "commands.axess.version": "You're currently running aXess version %s",
+  "commands.axess.error.dump": "Error: Could not dump data",
+  "commands.axess.dump_success": "Dump created successfully in server root folder",
+  "commands.axess.error.network_not_found": "Error: Network not found",
+  "commands.axess.error.invalid_page": "Error: Invalid page",
+  "commands.axess.created_by": "created by",
+  "commands.axess.network_pages": "Displaying networks on page %1$s out of %2$s:",
+  "commands.axess.view_network": "Viewing network %s:",
+  "commands.axess.error.no_networks": "Error: No networks available",
+  "commands.axess.success_delete": "Deleted network %s successfully."
 }

@@ -92,4 +92,17 @@ public class AccessLevel {
         return newAccessLevel;
     }
 
+    public boolean strictEquals(Object obj) {
+        if (obj instanceof AccessLevel oLevel) {
+            return (
+                    uuid.equals(oLevel.getUUID()) &&
+                            networkUUID.equals(oLevel.getUUID()) &&
+                            priority == oLevel.getPriority() &&
+                            icon == oLevel.icon &&
+                            color.equals(oLevel.getColor()) &&
+                            name.equals(oLevel.getName())
+            );
+        }
+        return super.equals(obj);
+    }
 }

@@ -97,7 +97,7 @@ public class NetworkManagerScreen extends Screen {
 
         super.render(pGuiGraphics, pMouseX, pMouseY, pPartialTick);
 
-        int networksCount = AccessNetworkDataClient.getNetworks().stream().filter((network -> network.isOwnedBy(getMinecraft().player))).toList().size();
+        int networksCount = AccessNetworkDataClient.getNetworks().size();
         int maxNetworksCount = getMinecraft().player != null ? AxessConfig.getPlayerMaxNetworks(getMinecraft().player) : 0;
 
         this.addButton.active = networksCount < maxNetworksCount;

@@ -1,6 +1,6 @@
 package net.teekay.axess.screen.component;
 
-import com.ibm.icu.impl.Pair;
+import com.mojang.datafixers.util.Pair;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -32,7 +32,7 @@ public class NetworkAndLevelEntry {
 
         hasOptions = withOptions;
 
-        this.button = new TexturedButton(pX, pY, pWidth-21, pHeight, Component.literal(pair.first.getName()+" - "+pair.second.getName()), btn -> {});
+        this.button = new TexturedButton(pX, pY, pWidth-21, pHeight, Component.literal(pair.getFirst().getName()+" - "+pair.getSecond().getName()), btn -> {});
 
         this.trashButton = new HumbleImageButton(
                 pX + pWidth - 20,

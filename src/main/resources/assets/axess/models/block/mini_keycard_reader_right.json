@@ -111,6 +111,58 @@
 			"faces": {
 				"up": {"uv": [14, 16, 12, 14], "texture": "#0", "tintindex": 1}
 			}
+		},
+		{
+			"from": [2.25, 0.75, 4.25],
+			"to": [2.75, 1.25, 4.75],
+			"rotation": {"angle": 0, "axis": "y", "origin": [2, 0.75, 4]},
+			"faces": {
+				"north": {"uv": [0, 15, 1, 16], "texture": "#0"},
+				"east": {"uv": [0, 15, 1, 16], "texture": "#0"},
+				"south": {"uv": [0, 15, 1, 16], "texture": "#0"},
+				"west": {"uv": [0, 15, 1, 16], "texture": "#0"},
+				"up": {"uv": [0, 15, 1, 16], "texture": "#0"},
+				"down": {"uv": [0, 15, 1, 16], "texture": "#0"}
+			}
+		},
+		{
+			"from": [7.25, 0.75, 4.25],
+			"to": [7.75, 1.25, 4.75],
+			"rotation": {"angle": 0, "axis": "y", "origin": [7, 0.75, 4]},
+			"faces": {
+				"north": {"uv": [0, 15, 1, 16], "texture": "#0"},
+				"east": {"uv": [0, 15, 1, 16], "texture": "#0"},
+				"south": {"uv": [0, 15, 1, 16], "texture": "#0"},
+				"west": {"uv": [0, 15, 1, 16], "texture": "#0"},
+				"up": {"uv": [0, 15, 1, 16], "texture": "#0"},
+				"down": {"uv": [0, 15, 1, 16], "texture": "#0"}
+			}
+		},
+		{
+			"from": [7.25, 0.75, 11.25],
+			"to": [7.75, 1.25, 11.75],
+			"rotation": {"angle": 0, "axis": "y", "origin": [7, 0.75, 11]},
+			"faces": {
+				"north": {"uv": [0, 15, 1, 16], "texture": "#0"},
+				"east": {"uv": [0, 15, 1, 16], "texture": "#0"},
+				"south": {"uv": [0, 15, 1, 16], "texture": "#0"},
+				"west": {"uv": [0, 15, 1, 16], "texture": "#0"},
+				"up": {"uv": [0, 15, 1, 16], "texture": "#0"},
+				"down": {"uv": [0, 15, 1, 16], "texture": "#0"}
+			}
+		},
+		{
+			"from": [2.25, 0.75, 11.25],
+			"to": [2.75, 1.25, 11.75],
+			"rotation": {"angle": 0, "axis": "y", "origin": [2, 0.75, 11]},
+			"faces": {
+				"north": {"uv": [0, 15, 1, 16], "texture": "#0"},
+				"east": {"uv": [0, 15, 1, 16], "texture": "#0"},
+				"south": {"uv": [0, 15, 1, 16], "texture": "#0"},
+				"west": {"uv": [0, 15, 1, 16], "texture": "#0"},
+				"up": {"uv": [0, 15, 1, 16], "texture": "#0"},
+				"down": {"uv": [0, 15, 1, 16], "texture": "#0"}
+			}
 		}
 	],
 	"display": {

@@ -11,7 +11,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.teekay.axess.Axess;
 import net.teekay.axess.screen.component.HumbleImageButton;
 import net.teekay.axess.utilities.AxessColors;
-import net.teekay.axess.utilities.MathUtil;
+import net.teekay.axess.utilities.MathUtilities;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -35,7 +35,7 @@ public class ColorSelectionScreen extends Screen {
 
     public ColorSelectionScreen(Consumer<Color> callback, Color initColor) {
         super(TITLE);
-        //System.out.println("COLOR");
+
         this.selColor = AxessColors.toHsv(initColor);
 
         this.imageWidth = 150;
@@ -56,20 +56,17 @@ public class ColorSelectionScreen extends Screen {
 
     private void remakeColors() {
 
-        //System.out.println("HUE CALCS");
         // HUE
         if (hueColors.size() == 0) for (int i = 0; i < 120; i++) {
             hueColors.add(AxessColors.hsvToRgb(3f * i, 100f, 100f));
         }
 
-        //System.out.println("SAT CALCS");
         // SAT
         saturationColors.clear();
         for (int i = 0; i < 120; i++) {
             saturationColors.add(AxessColors.hsvToRgb(selColor.h, ((float)(i) / 119f) * 100f, selColor.v));
         }
 
-        //System.out.println("VIB CALCS");
         // VIB
         vibranceColors.clear();
         for (int i = 0; i < 120; i++) {
@@ -191,11 +188,11 @@ public class ColorSelectionScreen extends Screen {
 
     public void updateHeld(int mouseX) {
         if (dragging.equals("h")) {
-            selColor.h = MathUtil.clampInt((int)((float)(mouseX - leftPos-15)/120f * 360f), 0, 360);
+            selColor.h = MathUtilities.clampInt((int)((float)(mouseX - leftPos-15)/120f * 360f), 0, 360);
         } else if (dragging.equals("s")) {
-            selColor.s = MathUtil.clampInt((int)((float)(mouseX - leftPos-15)/120f * 100f), 0, 100);
+            selColor.s = MathUtilities.clampInt((int)((float)(mouseX - leftPos-15)/120f * 100f), 0, 100);
         } else if (dragging.equals("v")) {
-            selColor.v = MathUtil.clampInt((int)((float)(mouseX - leftPos-15)/120f * 100f), 0, 100);
+            selColor.v = MathUtilities.clampInt((int)((float)(mouseX - leftPos-15)/120f * 100f), 0, 100);
         } else {
             return;
         }

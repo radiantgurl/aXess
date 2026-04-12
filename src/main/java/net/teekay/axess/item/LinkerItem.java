@@ -1,22 +1,33 @@
 package net.teekay.axess.item;
 
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.teekay.axess.Axess;
 import net.teekay.axess.AxessConfig;
-import net.teekay.axess.block.IPairableBlockEntity;
-import net.teekay.axess.block.readers.KeycardReaderBlockEntity;
-import net.teekay.axess.block.receiver.ReceiverBlockEntity;
-import net.teekay.axess.utilities.AccessUtils;
+import net.teekay.axess.block.link.ILinkableBlockEntity;
+import net.teekay.axess.block.link.LinkingSystem;
+import org.joml.Random;
+import org.lwjgl.glfw.GLFW;
+
+import javax.annotation.Nullable;
+import java.util.List;
 
 public class LinkerItem extends Item {
     public LinkerItem() {
@@ -31,6 +42,21 @@ public class LinkerItem extends Item {
     public Component NO_PERMISSION = Component.translatable("item."+ Axess.MODID+".linker.no_permission");
     public Component CLEARED_LINKS = Component.translatable("item."+Axess.MODID+".linker.clear_links");
 
+    public void playSuccessSound(UseOnContext pContext) {
+        BlockPos pos = pContext.getClickedPos();
+        Vec3 actualPos = pContext.getLevel().getBlockState(pos).getShape(pContext.getLevel(), pos).bounds().getCenter();
+        pContext.getLevel().playSeededSound(null,
+                pos.getX() + actualPos.x, pos.getY() + actualPos.y,  pos.getZ() + actualPos.z,
+                SoundEvents.AMETHYST_BLOCK_STEP, SoundSource.BLOCKS, 1, 1, Random.newSeed());
+    }
+
+    public void playClearSound(UseOnContext pContext) {
+        BlockPos pos = pContext.getClickedPos();
+        Vec3 actualPos = pContext.getLevel().getBlockState(pos).getShape(pContext.getLevel(), pos).bounds().getCenter();
+        pContext.getLevel().playSeededSound(null,
+                pos.getX() + actualPos.x, pos.getY() + actualPos.y,  pos.getZ() + actualPos.z,
+                SoundEvents.AMETHYST_BLOCK_BREAK, SoundSource.BLOCKS, 1, 0.2f, Random.newSeed());
+    }
 
     @Override
     public InteractionResult useOn(UseOnContext pContext) {
@@ -50,49 +76,63 @@ public class LinkerItem extends Item {
                 if (player.isShiftKeyDown() && itemStack.getOrCreateTag().contains("selPos")) {
                     itemStack.getOrCreateTag().remove("selPos");
                     player.displayClientMessage(CANCEL, true);
+                    playClearSound(pContext);
                     return InteractionResult.CONSUME;
-                } else if (clickedBE instanceof IPairableBlockEntity clickedBEPairable) {
-                    if (!clickedBEPairable.canBePairedBy(player))
+                } else if (clickedBE instanceof ILinkableBlockEntity clickedBELinkable) {
+                    LinkingSystem.validateLinksOnBlock(clickedBELinkable);
+
+                    if (!clickedBELinkable.canBeLinkedBy(player))
                         return InteractionResult.PASS;
 
                     if (player.isShiftKeyDown()) {
-                        clickedBEPairable.clearPairings();
+                        LinkingSystem.clearLinks(clickedBELinkable);
                         player.displayClientMessage(CLEARED_LINKS, true);
+                        playSuccessSound(pContext);
                         return InteractionResult.SUCCESS;
                     }
+
+                    if (!clickedBELinkable.canLink())
+                        return InteractionResult.PASS;
 
                     if (itemStack.getOrCreateTag().contains("selPos")) { // clicked second
                         BlockPos firstPos = BlockPos.of(itemStack.getTag().getLong("selPos"));
 
                         if (clickedPos.equals(firstPos)) return InteractionResult.PASS;
 
-                        if (Math.sqrt(clickedPos.distSqr(firstPos)) >= AxessConfig.maxPairDistance) {
+                        if (Math.sqrt(clickedPos.distSqr(firstPos)) >= AxessConfig.maxLinkDistance) {
                             player.displayClientMessage(TOO_FAR, true);
                             return InteractionResult.PASS;
                         }
 
                         BlockEntity firstBE = level.getBlockEntity(firstPos);
-                        if (level.getBlockEntity(firstPos) instanceof IPairableBlockEntity firstBEPairable) {
-                            if (!firstBEPairable.canBePairedBy(player))
+                        if (firstBE instanceof ILinkableBlockEntity firstBELinkable) {
+                            LinkingSystem.validateLinksOnBlock(firstBELinkable);
+
+                            if (!firstBELinkable.canLink())
+                                return InteractionResult.PASS;
+                            if (!firstBELinkable.canBeLinkedBy(player))
+                                return InteractionResult.PASS;
+                            if (!firstBELinkable.canLinkWith(clickedBE) || !clickedBELinkable.canLinkWith(firstBE))
                                 return InteractionResult.PASS;
 
-                            if (!firstBEPairable.canPairWith(clickedBE) || !clickedBEPairable.canPairWith(firstBE))
-                                return InteractionResult.PASS;
-
-                            firstBEPairable.handlePairing(clickedBE);
+                            LinkingSystem.linkBlocks(firstBELinkable, clickedBELinkable);
 
                             player.displayClientMessage(LINKED_OK, true);
                             itemStack.getOrCreateTag().remove("selPos");
 
+                            playSuccessSound(pContext);
                             return InteractionResult.SUCCESS;
                         } else {
                             player.displayClientMessage(LINKABLE_NOT_PRESENT, true);
                             itemStack.getOrCreateTag().remove("selPos");
+
                             return InteractionResult.CONSUME;
                         }
                     } else { // clicked first
                         player.displayClientMessage(SELECTED_FIRST, true);
                         itemStack.getOrCreateTag().putLong("selPos", clickedPos.asLong());
+
+                        playSuccessSound(pContext);
                         return InteractionResult.SUCCESS;
                     }
                 }
@@ -106,5 +146,31 @@ public class LinkerItem extends Item {
     @Override
     public boolean isFoil(ItemStack pStack) {
         return super.isFoil(pStack) || pStack.getOrCreateTag().contains("selPos");
+    }
+
+    private static final String MORE_INFO_LABEL_KEY = "tooltip."+ Axess.MODID + ".more_info";
+    private static final Component LSHIFT_LABEL = Component.translatable("tooltip."+ Axess.MODID + ".lshift");
+
+    private static final Component INFO_LABEL = Component.translatable("tooltip."+ Axess.MODID + ".item.linker");
+
+    @OnlyIn(Dist.CLIENT)
+    @Override
+    public void appendHoverText(ItemStack pStack, @Nullable Level pLevel, List<Component> pTooltipComponents, TooltipFlag pIsAdvanced) {
+        if (pLevel == null) {super.appendHoverText(pStack, pLevel, pTooltipComponents, pIsAdvanced); return;}
+        if (!pLevel.isClientSide()) return;
+
+        // Tooltip
+        if (Minecraft.getInstance().player != null)
+            if (InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), GLFW.GLFW_KEY_LEFT_SHIFT)) {
+                pTooltipComponents.add(
+                        INFO_LABEL.copy().withStyle(ChatFormatting.GRAY)
+                );
+            } else {
+                pTooltipComponents.add(
+                        Component.translatable(MORE_INFO_LABEL_KEY, LSHIFT_LABEL.copy().withStyle(ChatFormatting.WHITE)).withStyle(ChatFormatting.GRAY)
+                );
+            }
+
+        super.appendHoverText(pStack, pLevel, pTooltipComponents, pIsAdvanced);
     }
 }

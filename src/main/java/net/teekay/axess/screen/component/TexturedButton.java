@@ -1,6 +1,5 @@
 package net.teekay.axess.screen.component;
 
-import com.sun.jna.platform.win32.WinBase;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -9,7 +8,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.teekay.axess.Axess;
 import net.teekay.axess.utilities.AxessColors;
-import net.teekay.axess.utilities.MathUtil;
+import net.teekay.axess.utilities.MathUtilities;
 
 public class TexturedButton extends Button {
     public TexturedButton(int x, int y, int width, int height, Component title, OnPress onPress) {
@@ -102,7 +101,12 @@ public class TexturedButton extends Button {
                 0, getColor().getOffset() + (isHoveredOrFocused() ? 20 : 0));
 
         Font font = Minecraft.getInstance().font;
-        int textWidth = font.width(this.getMessage());
+        int textWidth;
+        if (this.getMessage() == null || this.getMessage().getString().isEmpty()) {
+            textWidth = 0;
+        } else {
+            textWidth = font.width(this.getMessage());
+        }
 
         int textX = this.getX() + textPaddingLeft +  ((this.width - textPaddingLeft) - textWidth) / 2 + 1;
         int textY = this.getY() + (this.height - 8) / 2;
@@ -112,7 +116,7 @@ public class TexturedButton extends Button {
         int offset = 0;
         if (textWidth > this.width - 4) {
             float x = ((textWidth - this.width + 4f) / 2f);
-            offset = Math.round(MathUtil.clampFloat((float) (Math.sin(timePassed / 20f) * x * 2f), -x, x));
+            offset = Math.round(MathUtilities.clampFloat((float) (Math.sin(timePassed / 20f) * x * 2f), -x, x));
         }
 
         graphics.drawString(font, this.getMessage(), textX + offset, textY, isHoveredOrFocused() ? 0xFFFFFF : getColor().getColor(), false);

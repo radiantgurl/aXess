@@ -1,15 +1,19 @@
 package net.teekay.axess.client;
 
-import com.ibm.icu.impl.Pair;
+import com.mojang.datafixers.util.Pair;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.teekay.axess.access.AccessLevel;
 import net.teekay.axess.access.AccessNetwork;
+import net.teekay.axess.access.AccessPermission;
 import net.teekay.axess.registry.AxessIconRegistry;
 import net.teekay.axess.screen.*;
 
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -49,6 +53,16 @@ public class AxessClientMenus {
         return true;
     }
 
+    public static boolean openPlayerPermissionEditor(HashMap<UUID, EnumSet<AccessPermission>> initPerms) {
+        Minecraft.getInstance().pushGuiLayer(new NetworkPlayerPermissionScreen(initPerms));
+        return true;
+    }
+
+    public static boolean openPlayerSelectionScreen(Consumer<UUID> e) {
+        Minecraft.getInstance().pushGuiLayer(new PlayerSelectionScreen(e));
+        return true;
+    }
+
     public static boolean openAccessLevelSelectionScreen(AccessNetwork net, Consumer<AccessLevel> e) {
         Minecraft.getInstance().pushGuiLayer(new AccessLevelSelectionScreen(net, e));
         return true;
@@ -56,6 +70,11 @@ public class AxessClientMenus {
 
     public static boolean openKeycardOverridesScreen(ArrayList<Pair<AccessNetwork, AccessLevel>> pairs) {
         Minecraft.getInstance().pushGuiLayer(new KeycardReaderOverridesScreen(pairs));
+        return true;
+    }
+
+    public static boolean openPermissionEditorScreen(UUID playerUUID, EnumSet<AccessPermission> permissions) {
+        Minecraft.getInstance().pushGuiLayer(new PermissionEditorScreen(playerUUID, permissions));
         return true;
     }
 

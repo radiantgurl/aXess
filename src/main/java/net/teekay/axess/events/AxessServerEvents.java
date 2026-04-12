@@ -1,19 +1,18 @@
 package net.teekay.axess.events;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.teekay.axess.Axess;
 import net.teekay.axess.access.AccessNetworkDataServer;
 import net.teekay.axess.network.AxessPacketHandler;
+import net.teekay.axess.network.packets.client.StCPlayerCacheModifiedPacket;
 import net.teekay.axess.network.packets.client.StCSyncAllNetworks;
+import net.teekay.axess.network.packets.client.StCSyncPlayerNameCache;
+import net.teekay.axess.utilities.name_cache.ServerPlayerNameCache;
 
 import java.util.Objects;
 
@@ -25,11 +24,19 @@ public class AxessServerEvents {
         if (!event.getEntity().level().isClientSide) {
             Player player = event.getEntity();
 
-            AccessNetworkDataServer data = AccessNetworkDataServer.get(Objects.requireNonNull(player.getServer()));
-            CompoundTag tag = new CompoundTag();
-            data.save(tag);
+            AccessNetworkDataServer networkDataServer = AccessNetworkDataServer.get(Objects.requireNonNull(player.getServer()));
 
-            AxessPacketHandler.sendToPlayer(new StCSyncAllNetworks(data), (ServerPlayer) player);
+            ServerPlayerNameCache playerNameCacheServer = ServerPlayerNameCache.get(Objects.requireNonNull(player.getServer()));
+            playerNameCacheServer.setName(player.getUUID(), player.getName().getString());
+
+            AxessPacketHandler.sendToPlayer(new StCSyncAllNetworks(networkDataServer), (ServerPlayer) player);
+            AxessPacketHandler.sendToPlayer(new StCSyncPlayerNameCache(playerNameCacheServer), (ServerPlayer) player);
+
+            AxessPacketHandler.sendToAllClients(
+                    new StCPlayerCacheModifiedPacket(
+                            player.getUUID(),
+                            player.getName().getString())
+            );
         }
     }
 
@@ -39,6 +46,9 @@ public class AxessServerEvents {
 
         AccessNetworkDataServer data = AccessNetworkDataServer.get(event.getLevel().getServer());
         data.setDirty();
+
+        ServerPlayerNameCache nameCache = ServerPlayerNameCache.get(event.getLevel().getServer());
+        nameCache.setDirty();
     }
 
 }

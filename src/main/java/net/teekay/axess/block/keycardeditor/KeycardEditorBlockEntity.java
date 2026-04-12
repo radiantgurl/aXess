@@ -3,7 +3,9 @@ package net.teekay.axess.block.keycardeditor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.Containers;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.SimpleContainer;
@@ -26,7 +28,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class KeycardEditorBlockEntity extends BlockEntity implements MenuProvider {
-    public static class KeycardItemStackHandler extends ItemStackHandler {
+    public class KeycardItemStackHandler extends ItemStackHandler {
         private final Runnable onChangedCallback;
 
         public KeycardItemStackHandler(int i, Runnable onChanged) {
@@ -43,6 +45,10 @@ public class KeycardEditorBlockEntity extends BlockEntity implements MenuProvide
         protected void onContentsChanged(int slot) {
             super.onContentsChanged(slot);
             if (onChangedCallback != null) onChangedCallback.run();
+
+            if (level != null && !level.isClientSide()) {
+                level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+            }
         }
     }
 
@@ -83,7 +89,7 @@ public class KeycardEditorBlockEntity extends BlockEntity implements MenuProvide
 
     @Override
     public void load(CompoundTag pTag) {
-        //System.out.println(pTag);
+
         itemStackHandler.deserializeNBT(pTag.getCompound("inventory"));
 
         super.load(pTag);
@@ -125,6 +131,16 @@ public class KeycardEditorBlockEntity extends BlockEntity implements MenuProvide
     @Override
     public Component getDisplayName() {
         return TITLE;
+    }
+
+    @Override
+    public ClientboundBlockEntityDataPacket getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
+    }
+
+    @Override
+    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt) {
+        load(pkt.getTag());
     }
 
 

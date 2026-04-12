@@ -25,7 +25,7 @@ public class NetworkSelectionScreen extends Screen {
     private static final Component TITLE_LABEL = Component.translatable("gui."+Axess.MODID+".network_selection_screen");
 
     private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(Axess.MODID, "textures/gui/network_selection_screen.png");
-
+    private static final ResourceLocation BACK_TEXTURE = ResourceLocation.fromNamespaceAndPath(Axess.MODID, "textures/gui/back_button.png");
 
     private final int imageWidth, imageHeight;
 
@@ -67,6 +67,21 @@ public class NetworkSelectionScreen extends Screen {
             NetworkEntry btn = this.networkList.addElement(network, false);
             addWidget(btn.button);
         }
+
+        addRenderableWidget(new HumbleImageButton(
+                this.leftPos + 179,
+                this.topPos + 2,
+                20,
+                20,
+                0,
+                0,
+                20,
+                BACK_TEXTURE,
+                32, 64,
+                btn -> {
+                    AxessClientMenus.popGuiLayer();
+                }
+        ));
     }
 
     @Override

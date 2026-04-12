@@ -77,7 +77,7 @@ public class IconSelectionScreen extends Screen {
                     0, 0,
                     20,
                     EMPTY_BUTTON_TEXTURE,
-                    32, 64,
+                    64, 128,
                     btn -> {
                         select(selfIndex);
                     }

@@ -52,7 +52,7 @@ public class TexturedEditBox extends EditBox {
 
     @Override
     public boolean isHovered() {
-        return super.isHovered() && this.mouseInBoundingBox;
+        return super.isHovered() && this.mouseInBoundingBox && this.active;
     }
 
     @Override
@@ -79,7 +79,7 @@ public class TexturedEditBox extends EditBox {
                 this.getX(),
                 this.getY(),
                 0,
-                isBlank ? 40 : (isHovering ? 20 : 0),
+                this.active ? (isBlank ? 40 : (isHovering ? 20 : 0)) : 160,
                 this.width,
                 this.height,
                 256,
@@ -91,7 +91,7 @@ public class TexturedEditBox extends EditBox {
                 this.getX() + width - 1,
                 this.getY(),
                 0,
-                isBlank ? 40 : (isHovering ? 20 : 0),
+                this.active ? (isBlank ? 40 : (isHovering ? 20 : 0)) : 160,
                 1,
                 this.height,
                 256,

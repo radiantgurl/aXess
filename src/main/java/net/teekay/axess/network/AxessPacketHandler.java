@@ -7,9 +7,7 @@ import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
 import net.teekay.axess.Axess;
-import net.teekay.axess.network.packets.client.StCNetworkDeletedPacket;
-import net.teekay.axess.network.packets.client.StCNetworkModifiedPacket;
-import net.teekay.axess.network.packets.client.StCSyncAllNetworks;
+import net.teekay.axess.network.packets.client.*;
 import net.teekay.axess.network.packets.server.CtSDeleteNetworkPacket;
 import net.teekay.axess.network.packets.server.CtSModifyKeycardPacket;
 import net.teekay.axess.network.packets.server.CtSModifyKeycardReaderPacket;
@@ -20,12 +18,7 @@ import java.util.List;
 public class AxessPacketHandler {
     private static final String PROTOCOL_VERSION = "1";
 
-    private static final SimpleChannel INSTANCE = NetworkRegistry.newSimpleChannel(
-            ResourceLocation.fromNamespaceAndPath(Axess.MODID, "main"),
-            () -> PROTOCOL_VERSION,
-            PROTOCOL_VERSION::equals,
-            PROTOCOL_VERSION::equals
-    );
+    private static SimpleChannel INSTANCE;
 
     private static int lastID = 0;
 
@@ -35,6 +28,11 @@ public class AxessPacketHandler {
     }
 
     public static void register() {
+        INSTANCE = NetworkRegistry.ChannelBuilder.named(ResourceLocation.fromNamespaceAndPath(Axess.MODID, "main"))
+                .networkProtocolVersion(() -> PROTOCOL_VERSION)
+                .clientAcceptedVersions(s -> true)
+                .serverAcceptedVersions(s -> true)
+                .simpleChannel();
 
         // CLIENT TO SERVER
         INSTANCE.registerMessage(id(),
@@ -74,6 +72,16 @@ public class AxessPacketHandler {
                 StCSyncAllNetworks::encode,
                 StCSyncAllNetworks::new,
                 StCSyncAllNetworks::handle);
+        INSTANCE.registerMessage(id(),
+                StCPlayerCacheModifiedPacket.class,
+                StCPlayerCacheModifiedPacket::encode,
+                StCPlayerCacheModifiedPacket::new,
+                StCPlayerCacheModifiedPacket::handle);
+        INSTANCE.registerMessage(id(),
+                StCSyncPlayerNameCache.class,
+                StCSyncPlayerNameCache::encode,
+                StCSyncPlayerNameCache::new,
+                StCSyncPlayerNameCache::handle);
 
     }
 

@@ -1,6 +1,6 @@
 package net.teekay.axess.network.packets.server;
 
-import com.ibm.icu.impl.Pair;
+import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -12,7 +12,6 @@ import net.teekay.axess.block.readers.KeycardReaderBlockEntity;
 import net.teekay.axess.network.IAxessPacket;
 import net.teekay.axess.registry.AxessIconRegistry;
 import net.teekay.axess.screen.KeycardReaderMenu;
-import net.teekay.axess.utilities.AccessUtils;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -48,7 +47,7 @@ public class CtSModifyKeycardReaderPacket implements IAxessPacket {
 
         for (Pair<AccessNetwork, AccessLevel> pair :
                 overrideLevels) {
-            this.overrideAccessLevelsUUIDs.add(Pair.of(pair.first.getUUID(), pair.second.getUUID()));
+            this.overrideAccessLevelsUUIDs.add(Pair.of(pair.getFirst().getUUID(), pair.getSecond().getUUID()));
         }
 
         this.overrideDisplay = overrideDisplay;
@@ -108,8 +107,8 @@ public class CtSModifyKeycardReaderPacket implements IAxessPacket {
         for (Pair<UUID,UUID> pair :
                 overrideAccessLevelsUUIDs) {
             CompoundTag newTag = new CompoundTag();
-            newTag.putUUID("NetworkUUID", pair.first);
-            newTag.putUUID("LevelUUID", pair.second);
+            newTag.putUUID("NetworkUUID", pair.getFirst());
+            newTag.putUUID("LevelUUID", pair.getSecond());
             olistTag.add(newTag);
         }
 
@@ -141,15 +140,15 @@ public class CtSModifyKeycardReaderPacket implements IAxessPacket {
                 ServerPlayer player = context.getSender();
                 if (player == null) return;
 
-                KeycardReaderBlockEntity keycardEditor;
+                KeycardReaderBlockEntity reader;
                 if (player.containerMenu instanceof KeycardReaderMenu menu) {
-                    keycardEditor = menu.blockEntity;
+                    reader = menu.blockEntity;
                 } else if (player.level().getBlockEntity(blockEntityPos) instanceof KeycardReaderBlockEntity blockEntity) {
-                    keycardEditor = blockEntity;
+                    reader = blockEntity;
                 } else return;
 
-                AccessNetwork prevNetwork = keycardEditor.getAccessNetwork();
-                if (prevNetwork != null) if (!AccessUtils.canPlayerEditNetwork(player, prevNetwork)) return;
+                AccessNetwork prevNetwork = reader.getAccessNetwork();
+                if (prevNetwork != null) if (!prevNetwork.hasPermission(player, AccessPermission.READER_EDIT)) return;
 
                 AccessNetworkDataServer serverNetworkData = AccessNetworkDataServer.get(player.getServer());
                 AccessNetwork network = serverNetworkData.getNetwork(networkUUID);
@@ -164,41 +163,41 @@ public class CtSModifyKeycardReaderPacket implements IAxessPacket {
                 }
 
                 ArrayList<Pair<AccessNetwork, AccessLevel>> overrideAccessLevels = new ArrayList<>();
-                for (Pair<UUID, UUID> pair :
-                        overrideAccessLevelsUUIDs) {
-                    AccessNetwork net = serverNetworkData.getNetwork(pair.first);
-                    if (net == null) continue;
-                    AccessLevel level = net.getAccessLevel(pair.second);
-                    if (level == null) continue;
-                    overrideAccessLevels.add(Pair.of(net, level));
+                if (network.hasPermission(player, AccessPermission.READER_OVERRIDES)) {
+                    for (Pair<UUID, UUID> pair :
+                            overrideAccessLevelsUUIDs) {
+                        AccessNetwork net = serverNetworkData.getNetwork(pair.getFirst());
+                        if (net == null) continue;
+                        AccessLevel level = net.getAccessLevel(pair.getSecond());
+                        if (level == null) continue;
+                        overrideAccessLevels.add(Pair.of(net, level));
+                    }
                 }
 
                 if (compareMode != null)
-                    keycardEditor.setCompareMode(compareMode);
+                    reader.setCompareMode(compareMode);
 
                 if (activationMode != null) {
-                    keycardEditor.setActivationMode(activationMode);
-                    keycardEditor.execOnReaderPair(p -> p.setActivationMode(activationMode));
+                    reader.setActivationMode(activationMode);
                 }
 
                 if (pulseDurationTicks != 0) {
-                    keycardEditor.setPulseDurationTicks(pulseDurationTicks);
-                    keycardEditor.execOnReaderPair(p -> p.setPulseDurationTicks(pulseDurationTicks));
+                    reader.setPulseDurationTicks(pulseDurationTicks);
                 }
 
-                keycardEditor.setOverrideDisplay(overrideDisplay);
-                keycardEditor.setOverrideIcon(overrideIcon);
-                keycardEditor.setOverrideColor(overrideColor);
+                reader.setOverrideDisplay(overrideDisplay);
+                reader.setOverrideIcon(overrideIcon);
+                reader.setOverrideColor(overrideColor);
 
-                keycardEditor.setAccessNetwork(network);
-                keycardEditor.setAccessLevels(accessLevels);
+                reader.setAccessNetwork(network);
+                reader.setAccessLevels(accessLevels);
 
-                keycardEditor.setOverrideAccessLevels(overrideAccessLevels);
+                reader.setOverrideAccessLevels(overrideAccessLevels);
 
-                keycardEditor.setChanged();
-                keycardEditor.execOnReaderPair(KeycardReaderBlockEntity::setChanged);
-                keycardEditor.deactivate();
-                keycardEditor.execOnReaderPair(KeycardReaderBlockEntity::deactivate);
+                reader.setChanged();
+                reader.deactivate();
+
+                reader.updateOthers();
             } catch (Exception e) {e.printStackTrace();}
         });
     }

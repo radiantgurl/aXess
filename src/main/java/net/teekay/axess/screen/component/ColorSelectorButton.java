@@ -36,8 +36,8 @@ public class ColorSelectorButton extends HumbleImageButton {
                 0,
                 20,
                 EMPTY_BUTTON_TEXTURE,
-                32,
                 64,
+                128,
                 btn -> {}
         );
 

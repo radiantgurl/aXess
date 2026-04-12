@@ -1,6 +1,8 @@
 package net.teekay.axess.item.keycard;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -29,6 +31,7 @@ import net.teekay.axess.registry.AxessIconRegistry;
 import org.checkerframework.checker.index.qual.PolyUpperBound;
 import org.checkerframework.checker.units.qual.K;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.glfw.GLFW;
 
 import java.awt.*;
 import java.util.List;
@@ -43,6 +46,11 @@ public abstract class AbstractKeycardItem extends Item {
     private static final Component ACCESS_LEVEL_LABEL = Component.translatable("tooltip."+ Axess.MODID + ".keycard.access_level");
     private static final Component NO_LEVEL_LABEL = Component.translatable("tooltip."+ Axess.MODID + ".keycard.no_level");
     private static final Component UNCONFIGURED_LABEL = Component.translatable("tooltip."+ Axess.MODID + ".keycard.unconfigured");
+
+    private static final String MORE_INFO_LABEL_KEY = "tooltip."+ Axess.MODID + ".more_info";
+    private static final Component LSHIFT_LABEL = Component.translatable("tooltip."+ Axess.MODID + ".lshift");
+
+    private static final Component INFO_LABEL = Component.translatable("tooltip."+ Axess.MODID + ".item.keycard");
 
     public AbstractKeycardItem(Item.Properties properties) {
         super(properties);
@@ -122,6 +130,7 @@ public abstract class AbstractKeycardItem extends Item {
         }
     }
 
+    @OnlyIn(Dist.CLIENT)
     @Override
     public void appendHoverText(ItemStack pStack, @Nullable Level pLevel, List<Component> pTooltipComponents, TooltipFlag pIsAdvanced) {
         if (pLevel == null) {super.appendHoverText(pStack, pLevel, pTooltipComponents, pIsAdvanced); return;}
@@ -150,6 +159,19 @@ public abstract class AbstractKeycardItem extends Item {
                     UNCONFIGURED_LABEL.copy()
                         .withStyle(ChatFormatting.GRAY)
             );
+
+            // Tooltip
+            if (Minecraft.getInstance().player != null)
+                if (InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), GLFW.GLFW_KEY_LEFT_SHIFT)) {
+                    pTooltipComponents.add(
+                            INFO_LABEL.copy().withStyle(ChatFormatting.GRAY)
+                    );
+                } else {
+                    pTooltipComponents.add(
+                            Component.translatable(MORE_INFO_LABEL_KEY, LSHIFT_LABEL.copy().withStyle(ChatFormatting.WHITE)).withStyle(ChatFormatting.GRAY)
+                    );
+                }
+
         }
 
         super.appendHoverText(pStack, pLevel, pTooltipComponents, pIsAdvanced);

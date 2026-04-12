@@ -18,7 +18,8 @@
   "item.axess.linker.clear_links": "连接已清空",
 
   "block.axess.keycard_reader": "读卡机",
-  "block.axess.iron_keycard_reader": "铁质读卡机",
+  "block.axess.mini_keycard_reader_left": "迷你钥匙卡读取器（左）",
+  "block.axess.mini_keycard_reader_right": "迷你钥匙卡读取器（右）",
 
   "block.axess.network_manager": "权限网络管理器",
   "block.axess.keycard_editor": "写卡机",
@@ -32,7 +33,7 @@
   "tooltip.axess.keycard.no_network": "-",
 
   "gui.axess.help.network_manager": "在权限网络管理器中，你可以创建和删除网络，每个权限网络有独立的权限等级。",
-  "gui.axess.help.network_editor": "在这里编辑网络。每个权限等级有一个图标和一个颜色。顺序决定了每个等级的优先级。如需重新排序，拖动权限等级左侧的滑块。 The order displayed dictates the PRIORITY of each level. To reorder, grab the handles to the left of the access levels.",
+  "gui.axess.help.network_editor": "在这里编辑网络。每个权限等级有一个图标和一个颜色。顺序决定了每个等级的优先级。如需重新排序，拖动权限等级左侧的滑块。",
 
   "gui.axess.button.add_network": "添加网络",
   "gui.axess.button.edit": "编辑",
@@ -42,9 +43,11 @@
   "gui.axess.button.create": "创建",
   "gui.axess.button.done": "完成",
   "gui.axess.button.cancel": "取消",
+  "gui.axess.button.confirm": "确认",
   "gui.axess.button.add_access_level": "新权限等级",
   "gui.axess.button.change_color": "改变颜色",
   "gui.axess.button.change_icon": "改变图标",
+  "gui.axess.button.add_override": "添加覆盖",
 
   "gui.axess.input.network_name": "权限网络名称",
   "gui.axess.input.access_level_name": "权限等级名称",
@@ -77,6 +80,7 @@
   "gui.axess.keycard_reader.pulse_duration.prefix": "脉冲: ",
   "gui.axess.keycard_reader.pulse_duration.suffix": " Ticks",
   "gui.axess.keycard_reader.synced": "这些属性与配对的读卡机同步。",
+  "gui.axess.keycard_reader.override_display": "自定义图标",
 
   "gui.axess.compare_mode": "比较模式: ",
   "gui.axess.compare_mode.BIGGER_THAN_OR_EQUAL": ">=",
@@ -90,5 +94,9 @@
   "gui.axess.activation_mode.PULSE": "脉冲",
   "gui.axess.activation_mode.PULSE.description": "读卡机输出给定时长的红石信号",
   "gui.axess.activation_mode.TOGGLE": "切换",
-  "gui.axess.activation_mode.TOGGLE.description": "读卡机一直输出红石信号直到手动关闭。"
+  "gui.axess.activation_mode.TOGGLE.description": "读卡机一直输出红石信号直到手动关闭。",
+
+  "gui.axess.access_level_selection_screen": "选择访问等级",
+  "gui.axess.network_selection_screen": "选择网络",
+  "gui.axess.keycard_reader_overrides": "访问覆盖设置"
 }

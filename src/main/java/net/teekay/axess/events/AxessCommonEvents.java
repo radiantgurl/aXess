@@ -9,9 +9,5 @@ import net.teekay.axess.network.AxessPacketHandler;
 @Mod.EventBusSubscriber(modid = Axess.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class AxessCommonEvents {
 
-    @SubscribeEvent
-    public static void commonSetup(FMLCommonSetupEvent event) {
-        event.enqueueWork(AxessPacketHandler::register);
-    }
 
 }

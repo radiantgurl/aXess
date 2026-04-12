@@ -9,22 +9,21 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.teekay.axess.Axess;
 import net.teekay.axess.access.AccessLevel;
 import net.teekay.axess.access.AccessNetwork;
 import net.teekay.axess.access.AccessNetworkDataClient;
+import net.teekay.axess.access.AccessPermission;
 import net.teekay.axess.block.keycardeditor.KeycardEditorBlockEntity;
 import net.teekay.axess.item.keycard.AbstractKeycardItem;
 import net.teekay.axess.network.AxessPacketHandler;
 import net.teekay.axess.network.packets.server.CtSModifyKeycardPacket;
 import net.teekay.axess.screen.component.HumbleImageButton;
 import net.teekay.axess.screen.component.TexturedButton;
-import net.teekay.axess.utilities.AccessUtils;
 import net.teekay.axess.utilities.AxessColors;
-import net.teekay.axess.utilities.MathUtil;
+import net.teekay.axess.utilities.MathUtilities;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +37,7 @@ public class KeycardEditorScreen extends AbstractContainerScreen<KeycardEditorMe
     public static final Component NO_NETWORK_LABEL = Component.translatable("gui."+Axess.MODID+".keycard_editor.no_network");
     public static final Component NO_LEVEL_LABEL = Component.translatable("gui."+Axess.MODID+".keycard_editor.no_level");
     public static final Component NO_PERMISSIONS_LABEL = Component.translatable("gui."+Axess.MODID+".keycard_editor.no_permissions");
+    public static final Component NETWORK_NO_PERMISSIONS_LABEL = Component.translatable("gui."+Axess.MODID+".keycard_editor.network_no_permissions");
     public static final Component APPLY_CHANGES_LABEL = Component.translatable("gui."+Axess.MODID+".keycard_editor.apply_changes");
 
     public static final int KEYCARD_SLOT = 36 + KeycardEditorBlockEntity.KEYCARD_SLOT;
@@ -111,8 +111,8 @@ public class KeycardEditorScreen extends AbstractContainerScreen<KeycardEditorMe
     public void render(GuiGraphics pGuiGraphics, int pMouseX, int pMouseY, float pPartialTick) {
         renderBackground(pGuiGraphics);
 
-        scrollPosLevels   = MathUtil.clampInt(scrollPosLevels,   0, scrollMaxLevels  );
-        scrollPosNetworks = MathUtil.clampInt(scrollPosNetworks, 0, scrollMaxNetworks);
+        scrollPosLevels   = MathUtilities.clampInt(scrollPosLevels,   0, scrollMaxLevels  );
+        scrollPosNetworks = MathUtilities.clampInt(scrollPosNetworks, 0, scrollMaxNetworks);
 
         super.render(pGuiGraphics, pMouseX, pMouseY, pPartialTick);
 
@@ -126,8 +126,8 @@ public class KeycardEditorScreen extends AbstractContainerScreen<KeycardEditorMe
         }
         pGuiGraphics.disableScissor();
 
-        int netScrollerHeight = MathUtil.calcScrollHeight(NETWORKS_HEIGHT, scrollMaxNetworks);
-        int netScrollerPos = MathUtil.calcScrollPos(NETWORKS_HEIGHT, netScrollerHeight, scrollPosNetworks, scrollMaxNetworks);
+        int netScrollerHeight = MathUtilities.calcScrollHeight(NETWORKS_HEIGHT, scrollMaxNetworks);
+        int netScrollerPos = MathUtilities.calcScrollPos(NETWORKS_HEIGHT, netScrollerHeight, scrollPosNetworks, scrollMaxNetworks);
         pGuiGraphics.fill(
                 leftPos+NETWORKS_X+NETWORKS_WIDTH+1,
                 topPos+NETWORKS_Y+netScrollerPos,
@@ -143,8 +143,8 @@ public class KeycardEditorScreen extends AbstractContainerScreen<KeycardEditorMe
         }
         pGuiGraphics.disableScissor();
 
-        int lvlScrollerHeight = MathUtil.calcScrollHeight(LEVELS_HEIGHT, scrollMaxLevels);
-        int lvlScrollerPos = MathUtil.calcScrollPos(LEVELS_HEIGHT, lvlScrollerHeight, scrollPosLevels, scrollMaxLevels);
+        int lvlScrollerHeight = MathUtilities.calcScrollHeight(LEVELS_HEIGHT, scrollMaxLevels);
+        int lvlScrollerPos = MathUtilities.calcScrollPos(LEVELS_HEIGHT, lvlScrollerHeight, scrollPosLevels, scrollMaxLevels);
         pGuiGraphics.fill(
                 leftPos+LEVELS_X+LEVELS_WIDTH+1,
                 topPos+LEVELS_Y+lvlScrollerPos,
@@ -161,8 +161,19 @@ public class KeycardEditorScreen extends AbstractContainerScreen<KeycardEditorMe
             textComp = NO_KEYCARD_LABEL;
         } else if (selectedNetwork == null) {
             textComp = NO_NETWORK_LABEL;
-        } else if (!AccessUtils.canPlayerEditNetwork(Minecraft.getInstance().player, selectedNetwork)) {
-            textComp = NO_PERMISSIONS_LABEL;
+        } else if (!selectedNetwork.hasPermission(Minecraft.getInstance().player, AccessPermission.KEYCARD_ASSIGN)) {
+            if (this.menu.getSlot(KEYCARD_SLOT).getItem().getItem() instanceof AbstractKeycardItem) {
+                ItemStack stack = this.menu.getSlot(KEYCARD_SLOT).getItem();
+                if (stack != null) {
+                    if (((AbstractKeycardItem) stack.getItem()).getAccessNetwork(stack, menu.blockEntity.getLevel()).getUUID().equals(selectedNetwork.getUUID())) {
+                        textComp = NO_PERMISSIONS_LABEL;
+                    } else {
+                        textComp = NETWORK_NO_PERMISSIONS_LABEL;
+                    }
+                }
+            } else {
+                textComp = NETWORK_NO_PERMISSIONS_LABEL;
+            }
         } else if (selectedLevel == null) {
             textComp = NO_LEVEL_LABEL;
         } else {
@@ -225,6 +236,7 @@ public class KeycardEditorScreen extends AbstractContainerScreen<KeycardEditorMe
 
         List<AccessNetwork> networks = AccessNetworkDataClient.getNetworks();
         for (int index = 0; index < networks.size(); index++) {
+            if (!networks.get(index).hasPermission(Minecraft.getInstance().player, AccessPermission.KEYCARD_ASSIGN)) return;
             SelectableNetworkEntry entry = new SelectableNetworkEntry(networks.get(index), index);
             networkEntries.add(entry);
             addWidget(entry);
@@ -238,7 +250,7 @@ public class KeycardEditorScreen extends AbstractContainerScreen<KeycardEditorMe
         selectedNetwork = ((AbstractKeycardItem)itemStack.getItem()).getAccessNetwork(itemStack, menu.blockEntity.getLevel());
         selectedLevel = ((AbstractKeycardItem)itemStack.getItem()).getAccessLevel(itemStack, menu.blockEntity.getLevel());
 
-        if (selectedNetwork == null || AccessUtils.canPlayerEditNetwork(Minecraft.getInstance().player, selectedNetwork)) {
+        if (selectedNetwork == null || selectedNetwork.hasPermission(Minecraft.getInstance().player, AccessPermission.KEYCARD_ASSIGN)) {
             updateNetworkEntries();
             updateLevelEntries();
         } else {

@@ -5,12 +5,10 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.Mth;
 import net.minecraftforge.client.gui.widget.ForgeSlider;
 import net.teekay.axess.Axess;
-import net.teekay.axess.AxessConfig;
 import net.teekay.axess.utilities.AxessColors;
-import net.teekay.axess.utilities.MathUtil;
+import net.teekay.axess.utilities.MathUtilities;
 
 public class TexturedSlider extends ForgeSlider {
     public static final ResourceLocation SLIDER_TEXTURE = ResourceLocation.fromNamespaceAndPath(Axess.MODID, "textures/gui/sliders.png");
@@ -29,7 +27,7 @@ public class TexturedSlider extends ForgeSlider {
     }
 
     protected int getHandleTextureY() {
-        int i = this.isHoveredOrFocused() ? 3 : 2;
+        int i = this.isHoveredOrFocused() ? 1 : 0;
         return i * 20;
     }
 
@@ -54,7 +52,7 @@ public class TexturedSlider extends ForgeSlider {
         int offset = 0;
         if (textWidth > this.width - 4) {
             float x = ((textWidth - this.width + 4f) / 2f);
-            offset = Math.round(MathUtil.clampFloat((float) (Math.sin(timePassed / 20f) * x * 2f), -x, x));
+            offset = Math.round(MathUtilities.clampFloat((float) (Math.sin(timePassed / 20f) * x * 2f), -x, x));
         }
 
         guiGraphics.drawString(font, this.getMessage(), textX + offset, textY, isHoveredOrFocused() ? 0xFFFFFF : AxessColors.MAIN.getRGB(), false);
