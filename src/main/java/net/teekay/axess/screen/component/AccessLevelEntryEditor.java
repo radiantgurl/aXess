@@ -195,6 +195,13 @@ public class AccessLevelEntryEditor extends AbstractWidget {
         list.screen.childrenRemover.accept(this.iconButton);
         list.screen.childrenRemover.accept(this.colorButton);
         list.screen.childrenRemover.accept(this.fakeTrashButton);
+
+        this.editBox.setY(-100);
+        this.trashButton.setY(-100);
+        this.fakeTrashButton.setY(-100);
+        this.dragButton.setY(-100);
+        this.iconButton.setY(-100);
+        this.colorButton.setY(-100);
     }
 
     @Override

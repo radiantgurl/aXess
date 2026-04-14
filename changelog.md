@@ -1,3 +1,10 @@
+# v0.3.1
+
+**Fixes:**
+- Fixed network editor text boxes not accepting input after deleting levels in that position
+- Fixed the reader and keycard screens flickering from far away
+
+
 # v0.3.0
 
 **Changes:**
